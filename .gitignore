@@ -21,6 +21,15 @@ __pycache__/
 sql/project_underdog.db
 *.db
 outputs/
+!outputs/
+!outputs/README.md
+artifacts/*
+!artifacts/README.md
+!artifacts/checkpoints/
+!artifacts/checkpoints/.gitkeep
+!artifacts/logs/
+!artifacts/logs/.gitkeep
 __pycache__/
 .ipynb_checkpoints/
 .DS_Store
+outputs/*.csv
