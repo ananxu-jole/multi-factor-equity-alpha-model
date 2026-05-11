@@ -155,8 +155,8 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03e_signal_health",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03E_Signal Health Score.ipynb",
-        current_module="src.signal_health",
-        current_function="build_signal_health_table",
+        current_module="src.scoring.health",
+        current_function="run_03e_signal_health",
         expected_input_tables=(
             "signal_best_horizon_current",
             "signal_scoring_gate_current",
