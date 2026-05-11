@@ -172,8 +172,8 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03f_signal_reproducibility",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03F_Signal Reproducibility Engine.ipynb",
-        current_module="src.signal_reproducibility",
-        current_function="run_signal_reproducibility_tests",
+        current_module="src.scoring.reproducibility",
+        current_function="run_03f_signal_reproducibility",
         expected_input_tables=(
             "signal_health_score_current",
             "candidate_signals_current",
