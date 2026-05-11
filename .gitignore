@@ -11,4 +11,16 @@ data/
 anaconda_projects/
 
 # macOS
+.DS_Storesql/project_underdog.db
+*.db
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# Local data / generated artifacts
+sql/project_underdog.db
+*.db
+outputs/
+__pycache__/
+.ipynb_checkpoints/
 .DS_Store
