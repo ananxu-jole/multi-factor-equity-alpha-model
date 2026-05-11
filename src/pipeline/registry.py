@@ -188,8 +188,8 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03g_signal_diversity",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03G_Signal_Diversity_Engine.ipynb",
-        current_module="src.signal_diversity",
-        current_function="build_diversity_candidate_table",
+        current_module="src.scoring.diversity",
+        current_function="run_03g_signal_diversity",
         expected_input_tables=(
             "signal_health_score_current",
             "signal_reproducibility_gate_current",
