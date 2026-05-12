@@ -136,16 +136,16 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03d_regime_ic",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03D_Regime Conditioned IC Engine.ipynb",
-        current_module="src.regime_ic",
-        current_function="run_regime_ic_analysis",
+        current_module="src.scoring.regime_ic",
+        current_function="run_03d_regime_ic",
         expected_input_tables=(
             "candidate_signals_current",
             "signal_scores_current",
             "signal_best_horizon_current",
             "clean_close_prices_current",
-            "regime_features_current",
         ),
         expected_output_tables=(
+            "regime_features_ic_current",
             "signal_regime_ic_daily_current",
             "signal_regime_ic_summary_current",
             "signal_regime_fragility_current",
