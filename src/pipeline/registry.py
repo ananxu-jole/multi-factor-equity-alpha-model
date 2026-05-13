@@ -102,8 +102,8 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03_signal_scoring",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03_Multi Horizon Signal Scoring.ipynb",
-        current_module="src.signal_scoring",
-        current_function="score_signal_library_multi_horizon",
+        current_module="src.scoring.signal_scoring",
+        current_function="run_03_signal_scoring",
         expected_input_tables=(
             "candidate_signals_current",
             "candidate_signal_quality_gate_current",
