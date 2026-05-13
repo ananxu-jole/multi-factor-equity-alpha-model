@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from contextlib import nullcontext, redirect_stdout
+import time
+from contextlib import contextmanager, nullcontext, redirect_stdout
 from io import StringIO
 from pathlib import Path
 
@@ -54,6 +55,40 @@ REQUIRED_INPUT_TABLES = (
     "signal_best_horizon_current",
     "clean_close_prices_current",
 )
+
+
+def _memory_usage_mb() -> float | None:
+    try:
+        import psutil  # type: ignore[import-not-found]
+    except ImportError:
+        return None
+    try:
+        return psutil.Process().memory_info().rss / (1024 * 1024)
+    except Exception:
+        return None
+
+
+@contextmanager
+def _profile_block(profile_records: list[dict[str, object]] | None, block_name: str):
+    memory_before = _memory_usage_mb()
+    start = time.perf_counter()
+    yield
+    elapsed = time.perf_counter() - start
+    memory_after = _memory_usage_mb()
+    if profile_records is not None:
+        profile_records.append(
+            {
+                "block": block_name,
+                "elapsed_seconds": elapsed,
+                "memory_before_mb": memory_before,
+                "memory_after_mb": memory_after,
+                "memory_delta_mb": (
+                    memory_after - memory_before
+                    if memory_before is not None and memory_after is not None
+                    else None
+                ),
+            }
+        )
 
 
 def _tercile_regime(
@@ -190,6 +225,48 @@ def compute_daily_signal_ic_by_regime(
             }
         )
     return pd.DataFrame(rows)
+
+
+def compute_daily_signal_ic_for_regime_columns(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+    regime_features: pd.DataFrame,
+    regime_columns: list[str] | tuple[str, ...],
+    method: str = "spearman",
+) -> pd.DataFrame:
+    """Compute daily IC once and attach each requested regime label column."""
+    if method not in {"spearman", "pearson"}:
+        raise ValueError("method must be 'spearman' or 'pearson'.")
+    missing_regime_columns = [column for column in regime_columns if column not in regime_features.columns]
+    if missing_regime_columns:
+        raise ValueError(f"regime_features is missing regime columns: {missing_regime_columns}")
+
+    signal, forward = _align_signal_forward(signal_panel, forward_returns_panel)
+    regimes = regime_features[["Date", *regime_columns]].copy()
+    regimes["Date"] = pd.to_datetime(regimes["Date"], errors="coerce")
+    regime_by_date = regimes.drop_duplicates("Date").set_index("Date")
+    regime_by_date = regime_by_date.reindex(signal.index)
+
+    daily_values: list[float] = []
+    for date in signal.index:
+        signal_row = signal.loc[date]
+        forward_row = forward.loc[date]
+        valid_mask = signal_row.notna() & forward_row.notna()
+        daily_ic = (
+            signal_row[valid_mask].corr(forward_row[valid_mask], method=method)
+            if valid_mask.sum() >= 3
+            else np.nan
+        )
+        daily_values.append(daily_ic)
+
+    base = pd.DataFrame({"Date": signal.index, "daily_ic": daily_values})
+    frames: list[pd.DataFrame] = []
+    for regime_column in regime_columns:
+        frame = base.copy()
+        frame.insert(1, "regime_column", regime_column)
+        frame.insert(2, "regime_value", regime_by_date[regime_column].to_numpy())
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def summarize_regime_ic(daily_regime_ic: pd.DataFrame) -> pd.DataFrame:
@@ -522,6 +599,7 @@ def run_regime_ic_analysis(
     regime_columns: list[str] | tuple[str, ...] | None = None,
     signal_scores: pd.DataFrame | None = None,
     method: str = "spearman",
+    profile_records: list[dict[str, object]] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run regime-conditioned IC diagnostics for scored signal/horizon pairs."""
     regime_columns = list(
@@ -537,44 +615,52 @@ def run_regime_ic_analysis(
     if signal_scores is None:
         signal_scores = load_table("signal_scores_current")
 
-    candidate_pairs = (
-        signal_scores.loc[signal_scores["horizon"].isin(horizons), ["signal_name", "horizon"]]
-        .dropna()
-        .drop_duplicates()
-        .sort_values(["signal_name", "horizon"])
-    )
+    with _profile_block(profile_records, "eligible candidate pair filtering"):
+        candidate_pairs = (
+            signal_scores.loc[signal_scores["horizon"].isin(horizons), ["signal_name", "horizon"]]
+            .dropna()
+            .drop_duplicates()
+            .sort_values(["signal_name", "horizon"])
+        )
     if candidate_pairs.empty:
-        regime_features = build_regime_features_for_ic(close_prices)
+        with _profile_block(profile_records, "regime feature construction"):
+            regime_features = build_regime_features_for_ic(close_prices)
         empty_daily = pd.DataFrame(
             columns=["Date", "regime_column", "regime_value", "daily_ic", "signal_name", "horizon", "method"]
         )
-        empty_summary = summarize_regime_ic(empty_daily)
-        return regime_features, empty_daily, empty_summary, compute_regime_fragility(empty_summary)
+        with _profile_block(profile_records, "regime grouping/summary"):
+            empty_summary = summarize_regime_ic(empty_daily)
+        with _profile_block(profile_records, "fragility scoring"):
+            empty_fragility = compute_regime_fragility(empty_summary)
+        return regime_features, empty_daily, empty_summary, empty_fragility
 
-    regime_features = build_regime_features_for_ic(close_prices)
-    forward_returns = make_forward_returns(close_prices, tuple(sorted(set(int(h) for h in horizons))))
+    with _profile_block(profile_records, "regime feature construction"):
+        regime_features = build_regime_features_for_ic(close_prices)
+    with _profile_block(profile_records, "forward return construction"):
+        forward_returns = make_forward_returns(close_prices, tuple(sorted(set(int(h) for h in horizons))))
 
-    needed_signal_names = candidate_pairs["signal_name"].astype(str).drop_duplicates().tolist()
-    selected_signal_long = candidate_signals_long.loc[
-        candidate_signals_long["signal_name"].isin(needed_signal_names)
-    ].copy()
-    panel_cache = {
-        signal_name: pivot_signal_long_to_panel(group, signal_name)
-        for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
-    }
+    with _profile_block(profile_records, "pivot/panel construction"):
+        needed_signal_names = candidate_pairs["signal_name"].astype(str).drop_duplicates().tolist()
+        selected_signal_long = candidate_signals_long.loc[
+            candidate_signals_long["signal_name"].isin(needed_signal_names)
+        ]
+        panel_cache = {
+            signal_name: pivot_signal_long_to_panel(group, signal_name)
+            for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
+        }
 
     daily_frames: list[pd.DataFrame] = []
-    for row in candidate_pairs.itertuples(index=False):
-        signal_name = str(row.signal_name)
-        horizon = int(row.horizon)
-        if signal_name not in panel_cache:
-            raise ValueError(f"signal_name '{signal_name}' not found in candidate_signals_long.")
-        for regime_column in regime_columns:
-            daily_ic = compute_daily_signal_ic_by_regime(
+    with _profile_block(profile_records, "daily IC calculation"):
+        for row in candidate_pairs.itertuples(index=False):
+            signal_name = str(row.signal_name)
+            horizon = int(row.horizon)
+            if signal_name not in panel_cache:
+                raise ValueError(f"signal_name '{signal_name}' not found in candidate_signals_long.")
+            daily_ic = compute_daily_signal_ic_for_regime_columns(
                 signal_panel=panel_cache[signal_name],
                 forward_returns_panel=forward_returns[horizon],
                 regime_features=regime_features,
-                regime_column=regime_column,
+                regime_columns=regime_columns,
                 method=method,
             )
             daily_ic["signal_name"] = signal_name
@@ -583,8 +669,10 @@ def run_regime_ic_analysis(
             daily_frames.append(daily_ic)
 
     daily_regime_ic = pd.concat(daily_frames, ignore_index=True) if daily_frames else pd.DataFrame()
-    regime_summary = summarize_regime_ic(daily_regime_ic)
-    regime_fragility = compute_regime_fragility(regime_summary)
+    with _profile_block(profile_records, "regime grouping/summary"):
+        regime_summary = summarize_regime_ic(daily_regime_ic)
+    with _profile_block(profile_records, "fragility scoring"):
+        regime_fragility = compute_regime_fragility(regime_summary)
     return regime_features, daily_regime_ic, regime_summary, regime_fragility
 
 
@@ -681,21 +769,25 @@ def run_03d_regime_ic(
     """Run the 03D regime-conditioned IC workflow with notebook-equivalent logic."""
     resolved_run_id = run_id or make_run_id(prefix="phase2_nb03d_regime_ic")
     run_timestamp = make_run_timestamp()
+    profile_records: list[dict[str, object]] = []
 
-    if verbose:
-        print("03D regime IC: loading score metadata")
-    signal_scores = load_table("signal_scores_current", db_path=db_path)
-    signal_best_horizon = load_table("signal_best_horizon_current", db_path=db_path)
-    needed_signal_names = _needed_signal_names(signal_scores, list(horizons))
+    with _profile_block(profile_records, "input table loading"):
+        if verbose:
+            print("03D regime IC: loading score metadata")
+        signal_scores = load_table("signal_scores_current", db_path=db_path)
+        signal_best_horizon = load_table("signal_best_horizon_current", db_path=db_path)
+        needed_signal_names = _needed_signal_names(signal_scores, list(horizons))
 
-    if verbose:
-        print(f"03D regime IC: loading {len(needed_signal_names):,} candidate signals by name")
-    candidate_signals_long = _load_candidate_signals_for_regime_ic(
-        needed_signal_names,
-        db_path=db_path,
-        verbose=verbose,
-    )
-    close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
+    with _profile_block(profile_records, "selective signal loading"):
+        if verbose:
+            print(f"03D regime IC: loading {len(needed_signal_names):,} candidate signals by name")
+        candidate_signals_long = _load_candidate_signals_for_regime_ic(
+            needed_signal_names,
+            db_path=db_path,
+            verbose=verbose,
+        )
+    with _profile_block(profile_records, "forward return input loading"):
+        close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
 
     if verbose:
         print("03D regime IC: running regime-conditioned IC analysis")
@@ -708,21 +800,23 @@ def run_03d_regime_ic(
             regime_columns=list(regime_columns),
             signal_scores=signal_scores,
             method=method,
+            profile_records=profile_records,
         )
-    metadata_columns = [
-        "signal_name",
-        "signal_family",
-        "best_horizon",
-        "signal_direction",
-        "signal_strength",
-    ]
-    metadata = signal_best_horizon[[column for column in metadata_columns if column in signal_best_horizon.columns]]
-    regime_summary_enriched = regime_summary.merge(metadata, on="signal_name", how="left")
-    regime_fragility_enriched = regime_fragility.merge(metadata, on="signal_name", how="left")
-    regime_opportunity_summary = build_regime_opportunity_summary(
-        regime_summary=regime_summary_enriched,
-        fragility=regime_fragility_enriched,
-    )
+    with _profile_block(profile_records, "fragility/opportunity scoring"):
+        metadata_columns = [
+            "signal_name",
+            "signal_family",
+            "best_horizon",
+            "signal_direction",
+            "signal_strength",
+        ]
+        metadata = signal_best_horizon[[column for column in metadata_columns if column in signal_best_horizon.columns]]
+        regime_summary_enriched = regime_summary.merge(metadata, on="signal_name", how="left")
+        regime_fragility_enriched = regime_fragility.merge(metadata, on="signal_name", how="left")
+        regime_opportunity_summary = build_regime_opportunity_summary(
+            regime_summary=regime_summary_enriched,
+            fragility=regime_fragility_enriched,
+        )
     pipeline_summary = build_regime_ic_pipeline_summary(
         run_id=resolved_run_id,
         run_timestamp=run_timestamp,
@@ -738,18 +832,20 @@ def run_03d_regime_ic(
 
     saved_paths: dict[str, Path] = {}
     if write:
-        if verbose:
-            print("03D regime IC: writing SQLite outputs")
-        saved_paths = save_regime_ic_outputs(
-            regime_features=regime_features,
-            daily_regime_ic=daily_regime_ic,
-            regime_summary=regime_summary_enriched,
-            regime_fragility=regime_fragility_enriched,
-            regime_opportunity_summary=regime_opportunity_summary,
-            db_path=db_path,
-            run_id=resolved_run_id,
-            regime_ic_version=regime_ic_version,
-        )
+        with _profile_block(profile_records, "SQLite writes"):
+            if verbose:
+                print("03D regime IC: writing SQLite outputs")
+            saved_paths = save_regime_ic_outputs(
+                regime_features=regime_features,
+                daily_regime_ic=daily_regime_ic,
+                regime_summary=regime_summary_enriched,
+                regime_fragility=regime_fragility_enriched,
+                regime_opportunity_summary=regime_opportunity_summary,
+                db_path=db_path,
+                run_id=resolved_run_id,
+                regime_ic_version=regime_ic_version,
+            )
+    profile = pd.DataFrame(profile_records)
 
     return {
         "run_id": resolved_run_id,
@@ -766,6 +862,7 @@ def run_03d_regime_ic(
         "regime_fragility": regime_fragility_enriched,
         "regime_opportunity_summary": regime_opportunity_summary,
         "summary": pipeline_summary,
+        "profile": profile,
         "saved_paths": saved_paths,
     }
 
@@ -778,6 +875,7 @@ __all__ = [
     "build_regime_ic_pipeline_summary",
     "build_regime_features_for_ic",
     "compute_daily_signal_ic_by_regime",
+    "compute_daily_signal_ic_for_regime_columns",
     "compute_regime_fragility",
     "HORIZONS",
     "IC_METHOD",
