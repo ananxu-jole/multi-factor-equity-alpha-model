@@ -150,6 +150,7 @@ def run_stage_specs(
     db_path: str | Path | None,
     write: bool,
     verbose: bool,
+    stage_kwargs: dict[str, dict[str, object]] | None = None,
 ) -> dict[str, object]:
     results: dict[str, dict[str, object]] = {}
     stage_summaries: list[dict[str, object]] = []
@@ -158,7 +159,8 @@ def run_stage_specs(
     for spec in stages:
         stage_start = time.perf_counter()
         try:
-            result = spec.runner(db_path=db_path, write=write, verbose=verbose)
+            extra_kwargs = (stage_kwargs or {}).get(spec.stage_id, {})
+            result = spec.runner(db_path=db_path, write=write, verbose=verbose, **extra_kwargs)
         except Exception as exc:
             elapsed = time.perf_counter() - stage_start
             print(f"stage_failed: {spec.stage_id}")

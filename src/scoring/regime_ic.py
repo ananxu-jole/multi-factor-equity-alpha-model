@@ -11,6 +11,11 @@ import pandas as pd
 from src.db import load_price_table, load_table
 from src.forward_returns import make_forward_returns
 from src.run_config import make_run_id, make_run_timestamp
+from src.scoring.panel_cache import (
+    build_signal_panel_cache,
+    load_signal_panels_from_cache,
+    validate_signal_panel_cache,
+)
 from src.scoring.regime_ic_storage import save_regime_ic_outputs
 from src.signal_storage import (
     load_candidate_signals_by_names,
@@ -600,6 +605,7 @@ def run_regime_ic_analysis(
     signal_scores: pd.DataFrame | None = None,
     method: str = "spearman",
     profile_records: list[dict[str, object]] | None = None,
+    signal_panels: dict[str, pd.DataFrame] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run regime-conditioned IC diagnostics for scored signal/horizon pairs."""
     regime_columns = list(
@@ -641,13 +647,19 @@ def run_regime_ic_analysis(
 
     with _profile_block(profile_records, "pivot/panel construction"):
         needed_signal_names = candidate_pairs["signal_name"].astype(str).drop_duplicates().tolist()
-        selected_signal_long = candidate_signals_long.loc[
-            candidate_signals_long["signal_name"].isin(needed_signal_names)
-        ]
-        panel_cache = {
-            signal_name: pivot_signal_long_to_panel(group, signal_name)
-            for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
-        }
+        if signal_panels is not None:
+            missing_panels = [signal_name for signal_name in needed_signal_names if signal_name not in signal_panels]
+            if missing_panels:
+                raise ValueError(f"signal panel cache is missing signal_names: {missing_panels}")
+            panel_cache = {signal_name: signal_panels[signal_name] for signal_name in needed_signal_names}
+        else:
+            selected_signal_long = candidate_signals_long.loc[
+                candidate_signals_long["signal_name"].isin(needed_signal_names)
+            ]
+            panel_cache = {
+                signal_name: pivot_signal_long_to_panel(group, signal_name)
+                for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
+            }
 
     daily_frames: list[pd.DataFrame] = []
     with _profile_block(profile_records, "daily IC calculation"):
@@ -727,6 +739,7 @@ def build_regime_ic_pipeline_summary(
     regime_summary: pd.DataFrame,
     regime_fragility: pd.DataFrame,
     regime_opportunity_summary: pd.DataFrame,
+    candidate_signal_rows_loaded: int | None = None,
 ) -> pd.DataFrame:
     fragility_counts = (
         regime_fragility["regime_fragility_flag"].value_counts(dropna=False).sort_index().astype(int).to_dict()
@@ -744,7 +757,10 @@ def build_regime_ic_pipeline_summary(
             {"metric": "run_timestamp", "value": run_timestamp},
             {"metric": "regime_ic_version", "value": regime_ic_version},
             {"metric": "requested_signal_count", "value": len(signal_names)},
-            {"metric": "candidate_signal_rows_loaded", "value": len(candidate_signals_long)},
+            {
+                "metric": "candidate_signal_rows_loaded",
+                "value": len(candidate_signals_long) if candidate_signal_rows_loaded is None else candidate_signal_rows_loaded,
+            },
             {"metric": "regime_feature_rows", "value": len(regime_features)},
             {"metric": "daily_regime_ic_rows", "value": len(daily_regime_ic)},
             {"metric": "regime_summary_rows", "value": len(regime_summary)},
@@ -763,6 +779,9 @@ def run_03d_regime_ic(
     horizons: list[int] | tuple[int, ...] = tuple(HORIZONS),
     regime_columns: list[str] | tuple[str, ...] = tuple(REGIME_COLUMNS),
     method: str = IC_METHOD,
+    use_panel_cache: bool = False,
+    panel_cache_dir: str | Path | None = None,
+    rebuild_panel_cache: bool = False,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -778,14 +797,52 @@ def run_03d_regime_ic(
         signal_best_horizon = load_table("signal_best_horizon_current", db_path=db_path)
         needed_signal_names = _needed_signal_names(signal_scores, list(horizons))
 
-    with _profile_block(profile_records, "selective signal loading"):
-        if verbose:
-            print(f"03D regime IC: loading {len(needed_signal_names):,} candidate signals by name")
-        candidate_signals_long = _load_candidate_signals_for_regime_ic(
-            needed_signal_names,
-            db_path=db_path,
-            verbose=verbose,
-        )
+    panel_cache_validation = pd.DataFrame()
+    panel_cache_metadata = pd.DataFrame()
+    signal_panels: dict[str, pd.DataFrame] | None = None
+    candidate_signal_rows_loaded = 0
+    if use_panel_cache:
+        cache_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with _profile_block(profile_records, "panel cache validation/build"):
+            with cache_context:
+                panel_cache_metadata = build_signal_panel_cache(
+                    needed_signal_names,
+                    db_path=db_path,
+                    cache_dir=panel_cache_dir,
+                    force=rebuild_panel_cache,
+                    verbose=verbose,
+                )
+                panel_cache_validation = validate_signal_panel_cache(
+                    needed_signal_names,
+                    db_path=db_path,
+                    cache_dir=panel_cache_dir,
+                    validate_checksum=False,
+                )
+            if not panel_cache_validation["fresh"].all():
+                stale = panel_cache_validation.loc[~panel_cache_validation["fresh"]]
+                raise ValueError(
+                    "Panel cache validation failed for 03D: "
+                    f"{stale[['signal_name', 'exists', 'fresh', 'error']].to_dict('records')}"
+                )
+            if "source_row_count" in panel_cache_metadata.columns:
+                candidate_signal_rows_loaded = int(panel_cache_metadata["source_row_count"].fillna(0).astype(int).sum())
+        with _profile_block(profile_records, "panel cache loading"):
+            signal_panels = load_signal_panels_from_cache(
+                needed_signal_names,
+                cache_dir=panel_cache_dir,
+                validate_checksum=False,
+            )
+        candidate_signals_long = pd.DataFrame()
+    else:
+        with _profile_block(profile_records, "selective signal loading"):
+            if verbose:
+                print(f"03D regime IC: loading {len(needed_signal_names):,} candidate signals by name")
+            candidate_signals_long = _load_candidate_signals_for_regime_ic(
+                needed_signal_names,
+                db_path=db_path,
+                verbose=verbose,
+            )
+        candidate_signal_rows_loaded = len(candidate_signals_long)
     with _profile_block(profile_records, "forward return input loading"):
         close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
 
@@ -801,6 +858,7 @@ def run_03d_regime_ic(
             signal_scores=signal_scores,
             method=method,
             profile_records=profile_records,
+            signal_panels=signal_panels,
         )
     with _profile_block(profile_records, "fragility/opportunity scoring"):
         metadata_columns = [
@@ -828,6 +886,7 @@ def run_03d_regime_ic(
         regime_summary=regime_summary_enriched,
         regime_fragility=regime_fragility_enriched,
         regime_opportunity_summary=regime_opportunity_summary,
+        candidate_signal_rows_loaded=candidate_signal_rows_loaded,
     )
 
     saved_paths: dict[str, Path] = {}
@@ -855,6 +914,10 @@ def run_03d_regime_ic(
         "signal_best_horizon": signal_best_horizon,
         "needed_signal_names": needed_signal_names,
         "candidate_signals_long": candidate_signals_long,
+        "use_panel_cache": use_panel_cache,
+        "panel_cache_metadata": panel_cache_metadata,
+        "panel_cache_validation": panel_cache_validation,
+        "signal_panels": signal_panels,
         "close_prices": close_prices,
         "regime_features": regime_features,
         "daily_regime_ic": daily_regime_ic,
@@ -882,7 +945,10 @@ __all__ = [
     "REGIME_COLUMNS",
     "REGIME_IC_VERSION",
     "REQUIRED_INPUT_TABLES",
+    "build_signal_panel_cache",
+    "load_signal_panels_from_cache",
     "run_03d_regime_ic",
     "run_regime_ic_analysis",
     "summarize_regime_ic",
+    "validate_signal_panel_cache",
 ]

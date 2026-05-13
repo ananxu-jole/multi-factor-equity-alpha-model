@@ -91,6 +91,17 @@ def main() -> int:
         default=REGIME_IC_VERSION,
         help="Regime IC version label for dry-run output.",
     )
+    parser.add_argument(
+        "--use-panel-cache",
+        action="store_true",
+        help="Run dry-run parity comparison through cached Parquet signal panels.",
+    )
+    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
+    parser.add_argument(
+        "--rebuild-panel-cache",
+        action="store_true",
+        help="Rebuild selected signal panel cache artifacts before parity comparison.",
+    )
     args = parser.parse_args()
 
     current_features = load_table("regime_features_ic_current", db_path=args.db_path)
@@ -102,6 +113,9 @@ def main() -> int:
     dry_run = run_03d_regime_ic(
         db_path=args.db_path,
         regime_ic_version=args.regime_ic_version,
+        use_panel_cache=args.use_panel_cache,
+        panel_cache_dir=args.panel_cache_dir,
+        rebuild_panel_cache=args.rebuild_panel_cache,
         write=False,
         verbose=False,
     )
