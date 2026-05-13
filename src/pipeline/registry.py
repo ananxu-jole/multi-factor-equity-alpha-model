@@ -120,8 +120,8 @@ PIPELINE_STAGES: tuple[StageMetadata, ...] = (
     StageMetadata(
         stage_id="03c_signal_decay",
         notebook_path="notebooks/2-Phase 2_Signal Expansion/03C_Signal Decay Engine.ipynb",
-        current_module="src.signal_decay",
-        current_function="run_signal_decay_analysis",
+        current_module="src.scoring.decay",
+        current_function="run_03c_signal_decay",
         expected_input_tables=(
             "candidate_signals_current",
             "signal_scores_current",
