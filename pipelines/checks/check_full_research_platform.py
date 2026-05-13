@@ -16,8 +16,8 @@ from pipelines.orchestration import FULL_STAGE_SPECS, run_stage_specs  # noqa: E
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run full research platform checks.")
     parser.add_argument("--db-path", default=None, help="Optional SQLite database path override.")
-    parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for 03D.")
-    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory for 03D.")
+    parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for 03C, 03D, and 03F.")
+    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
     args = parser.parse_args()
     output = run_stage_specs(
         FULL_STAGE_SPECS,
@@ -25,10 +25,18 @@ def main() -> int:
         write=False,
         verbose=False,
         stage_kwargs={
+            "03c_signal_decay": {
+                "use_panel_cache": args.use_panel_cache,
+                "panel_cache_dir": args.panel_cache_dir,
+            },
             "03d_regime_ic": {
                 "use_panel_cache": args.use_panel_cache,
                 "panel_cache_dir": args.panel_cache_dir,
-            }
+            },
+            "03f_signal_reproducibility": {
+                "use_panel_cache": args.use_panel_cache,
+                "panel_cache_dir": args.panel_cache_dir,
+            },
         },
     )
     return 0 if output["validation_passed"] else 1

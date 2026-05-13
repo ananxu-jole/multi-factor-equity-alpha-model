@@ -11,6 +11,11 @@ from src.db import load_price_table, load_table
 from src.forward_returns import make_forward_returns
 from src.run_config import make_run_id, make_run_timestamp
 from src.scoring.decay_storage import save_signal_decay_outputs
+from src.scoring.panel_cache import (
+    build_signal_panel_cache,
+    load_signal_panels_from_cache,
+    validate_signal_panel_cache,
+)
 from src.signal_storage import (
     load_candidate_signals_by_names,
     pivot_signal_long_to_panel,
@@ -289,6 +294,7 @@ def run_signal_decay_analysis(
     window: int = 63,
     method: str = "spearman",
     min_rolling_obs: int = 8,
+    signal_panels: dict[str, pd.DataFrame] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Run rolling IC and decay diagnostics for scored candidate signal/horizon pairs."""
     required_score_columns = {"signal_name", "horizon"}
@@ -308,13 +314,19 @@ def run_signal_decay_analysis(
 
     forward_returns = make_forward_returns(close_prices, tuple(sorted(set(int(h) for h in horizons))))
     needed_signal_names = candidate_pairs["signal_name"].astype(str).drop_duplicates().tolist()
-    selected_signal_long = candidate_signals_long.loc[
-        candidate_signals_long["signal_name"].isin(needed_signal_names)
-    ].copy()
-    panel_cache: dict[str, pd.DataFrame] = {
-        signal_name: pivot_signal_long_to_panel(group, signal_name)
-        for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
-    }
+    if signal_panels is not None:
+        missing_panels = [signal_name for signal_name in needed_signal_names if signal_name not in signal_panels]
+        if missing_panels:
+            raise ValueError(f"signal panel cache is missing signal_names: {missing_panels}")
+        panel_cache = {signal_name: signal_panels[signal_name] for signal_name in needed_signal_names}
+    else:
+        selected_signal_long = candidate_signals_long.loc[
+            candidate_signals_long["signal_name"].isin(needed_signal_names)
+        ].copy()
+        panel_cache: dict[str, pd.DataFrame] = {
+            signal_name: pivot_signal_long_to_panel(group, signal_name)
+            for signal_name, group in selected_signal_long.groupby("signal_name", sort=False)
+        }
     curve_frames: list[pd.DataFrame] = []
 
     for row in candidate_pairs.itertuples(index=False):
@@ -422,6 +434,9 @@ def run_03c_signal_decay(
     window: int = ROLLING_IC_WINDOW,
     method: str = IC_METHOD,
     min_rolling_obs: int = MIN_ROLLING_OBS,
+    use_panel_cache: bool = False,
+    panel_cache_dir: str | Path | None = None,
+    rebuild_panel_cache: bool = False,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -436,13 +451,49 @@ def run_03c_signal_decay(
     signal_scoring_gate = load_table("signal_scoring_gate_current", db_path=db_path)
     needed_signal_names = _needed_signal_names(signal_scores, list(horizons))
 
-    if verbose:
-        print(f"03C signal decay: loading {len(needed_signal_names):,} candidate signals by name")
-    candidate_signals = _load_candidate_signals_for_decay(
-        needed_signal_names,
-        db_path=db_path,
-        verbose=verbose,
-    )
+    panel_cache_validation = pd.DataFrame()
+    panel_cache_metadata = pd.DataFrame()
+    signal_panels: dict[str, pd.DataFrame] | None = None
+    candidate_signal_rows_loaded = 0
+    if use_panel_cache:
+        cache_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with cache_context:
+            panel_cache_metadata = build_signal_panel_cache(
+                needed_signal_names,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                force=rebuild_panel_cache,
+                verbose=verbose,
+            )
+            panel_cache_validation = validate_signal_panel_cache(
+                needed_signal_names,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                validate_checksum=False,
+            )
+        if not panel_cache_validation["fresh"].all():
+            stale = panel_cache_validation.loc[~panel_cache_validation["fresh"]]
+            raise ValueError(
+                "Panel cache validation failed for 03C: "
+                f"{stale[['signal_name', 'exists', 'fresh', 'error']].to_dict('records')}"
+            )
+        if "source_row_count" in panel_cache_metadata.columns:
+            candidate_signal_rows_loaded = int(panel_cache_metadata["source_row_count"].fillna(0).astype(int).sum())
+        signal_panels = load_signal_panels_from_cache(
+            needed_signal_names,
+            cache_dir=panel_cache_dir,
+            validate_checksum=False,
+        )
+        candidate_signals = pd.DataFrame()
+    else:
+        if verbose:
+            print(f"03C signal decay: loading {len(needed_signal_names):,} candidate signals by name")
+        candidate_signals = _load_candidate_signals_for_decay(
+            needed_signal_names,
+            db_path=db_path,
+            verbose=verbose,
+        )
+        candidate_signal_rows_loaded = len(candidate_signals)
     close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
 
     if verbose:
@@ -457,6 +508,7 @@ def run_03c_signal_decay(
             window=window,
             method=method,
             min_rolling_obs=min_rolling_obs,
+            signal_panels=signal_panels,
         )
     metadata_columns = [
         "signal_name",
@@ -476,6 +528,10 @@ def run_03c_signal_decay(
         decay_curve=decay_curve,
         decay_summary=decay_summary_enriched,
     )
+    pipeline_summary.loc[
+        pipeline_summary["metric"].eq("candidate_signal_rows_loaded"),
+        "value",
+    ] = candidate_signal_rows_loaded
 
     saved_paths: dict[str, Path] = {}
     if write:
@@ -498,6 +554,11 @@ def run_03c_signal_decay(
         "signal_scoring_gate": signal_scoring_gate,
         "needed_signal_names": needed_signal_names,
         "candidate_signals": candidate_signals,
+        "candidate_signal_rows_loaded": candidate_signal_rows_loaded,
+        "use_panel_cache": use_panel_cache,
+        "panel_cache_metadata": panel_cache_metadata,
+        "panel_cache_validation": panel_cache_validation,
+        "signal_panels": signal_panels,
         "close_prices": close_prices,
         "decay_curve": decay_curve,
         "decay_summary": decay_summary_enriched,

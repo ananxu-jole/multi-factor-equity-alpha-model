@@ -21,9 +21,9 @@ def main() -> int:
     mode.add_argument("--run", action="store_true", help="Run all stages and write outputs.")
     parser.add_argument("--db-path", default=None, help="Optional SQLite database path override.")
     parser.add_argument("--quiet", action="store_true", help="Suppress stage progress logging.")
-    parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for 03D.")
-    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory for 03D.")
-    parser.add_argument("--rebuild-panel-cache", action="store_true", help="Rebuild 03D panel cache before running.")
+    parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for 03C, 03D, and 03F.")
+    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
+    parser.add_argument("--rebuild-panel-cache", action="store_true", help="Rebuild selected panel cache artifacts before running.")
     args = parser.parse_args()
 
     if args.describe:
@@ -36,11 +36,21 @@ def main() -> int:
         write=args.run,
         verbose=not args.quiet,
         stage_kwargs={
+            "03c_signal_decay": {
+                "use_panel_cache": args.use_panel_cache,
+                "panel_cache_dir": args.panel_cache_dir,
+                "rebuild_panel_cache": args.rebuild_panel_cache,
+            },
             "03d_regime_ic": {
                 "use_panel_cache": args.use_panel_cache,
                 "panel_cache_dir": args.panel_cache_dir,
                 "rebuild_panel_cache": args.rebuild_panel_cache,
-            }
+            },
+            "03f_signal_reproducibility": {
+                "use_panel_cache": args.use_panel_cache,
+                "panel_cache_dir": args.panel_cache_dir,
+                "rebuild_panel_cache": args.rebuild_panel_cache,
+            },
         },
     )
     return 0 if output["validation_passed"] else 1

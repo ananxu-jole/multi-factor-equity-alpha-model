@@ -66,6 +66,17 @@ def main() -> int:
     )
     parser.add_argument("--run-id", default=None, help="Optional explicit run_id.")
     parser.add_argument("--quiet", action="store_true", help="Suppress engine progress logging.")
+    parser.add_argument(
+        "--use-panel-cache",
+        action="store_true",
+        help="Load cached Parquet signal panels instead of rebuilding panels from SQLite long rows.",
+    )
+    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
+    parser.add_argument(
+        "--rebuild-panel-cache",
+        action="store_true",
+        help="Rebuild selected signal panel cache artifacts before running.",
+    )
     args = parser.parse_args()
 
     if args.describe:
@@ -76,6 +87,9 @@ def main() -> int:
         db_path=args.db_path,
         decay_version=args.decay_version,
         run_id=args.run_id,
+        use_panel_cache=args.use_panel_cache,
+        panel_cache_dir=args.panel_cache_dir,
+        rebuild_panel_cache=args.rebuild_panel_cache,
         write=args.run,
         verbose=not args.quiet,
     )

@@ -12,6 +12,11 @@ from src.db import load_price_table
 from src.forward_returns import make_forward_returns
 from src.run_config import make_run_id, make_run_timestamp
 from src.run_config import get_sqlite_db_path
+from src.scoring.panel_cache import (
+    build_signal_panel_cache,
+    load_signal_panels_from_cache,
+    validate_signal_panel_cache,
+)
 from src.scoring.reproducibility_storage import save_signal_reproducibility_outputs
 from src.signal_storage import load_candidate_signals_by_names
 
@@ -310,6 +315,7 @@ def run_signal_reproducibility_tests(
     run_id: str | None = None,
     reproducibility_version: str | None = None,
     method: str = "spearman",
+    signal_panels: dict[str, pd.DataFrame] | None = None,
 ) -> pd.DataFrame:
     """Run universe, subperiod, and recent-universe reproducibility tests."""
     if candidate_table.empty:
@@ -328,7 +334,12 @@ def run_signal_reproducibility_tests(
         signal_name = str(candidate.signal_name)
         horizon = int(candidate.horizon)
         signal_direction = getattr(candidate, "signal_direction", "POSITIVE_EDGE")
-        signal_panel = _pivot_signal_panel(candidate_signals_long, signal_name)
+        if signal_panels is not None:
+            if signal_name not in signal_panels:
+                raise ValueError(f"signal panel cache is missing signal_name: {signal_name}")
+            signal_panel = signal_panels[signal_name]
+        else:
+            signal_panel = _pivot_signal_panel(candidate_signals_long, signal_name)
         forward_panel = forward_returns[horizon]
 
         tests: list[tuple[str, str, list[str] | None, pd.Timestamp | None, pd.Timestamp | None]] = []
@@ -482,6 +493,7 @@ def build_signal_reproducibility_summary(
     results: pd.DataFrame,
     summary: pd.DataFrame,
     gate: pd.DataFrame,
+    candidate_signal_rows_loaded: int | None = None,
 ) -> pd.DataFrame:
     """Build compact pipeline summary artifacts without changing output schemas."""
     final_gate_counts = (
@@ -501,7 +513,10 @@ def build_signal_reproducibility_summary(
             {"metric": "reproducibility_version", "value": reproducibility_version},
             {"metric": "candidate_count", "value": len(candidates)},
             {"metric": "unique_candidate_signals", "value": int(candidates["signal_name"].nunique()) if "signal_name" in candidates else 0},
-            {"metric": "candidate_signal_rows_loaded", "value": len(candidate_signals_long)},
+            {
+                "metric": "candidate_signal_rows_loaded",
+                "value": len(candidate_signals_long) if candidate_signal_rows_loaded is None else candidate_signal_rows_loaded,
+            },
             {"metric": "result_rows", "value": len(results)},
             {"metric": "summary_rows", "value": len(summary)},
             {"metric": "gate_rows", "value": len(gate)},
@@ -523,6 +538,9 @@ def run_03f_signal_reproducibility(
     orthogonal_watchlist_min_health_score: float = ORTHOGONAL_WATCHLIST_MIN_HEALTH_SCORE,
     orthogonal_watchlist_version: str = ORTHOGONAL_WATCHLIST_VERSION,
     method: str = IC_METHOD,
+    use_panel_cache: bool = False,
+    panel_cache_dir: str | Path | None = None,
+    rebuild_panel_cache: bool = False,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -545,14 +563,50 @@ def run_03f_signal_reproducibility(
     if verbose:
         print(f"03F signal reproducibility: loading {len(needed_signals):,} candidate signal panels")
     close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
-    load_context = nullcontext() if verbose else redirect_stdout(StringIO())
-    with load_context:
-        candidate_signals_long = load_candidate_signals_by_names(
+    panel_cache_validation = pd.DataFrame()
+    panel_cache_metadata = pd.DataFrame()
+    signal_panels: dict[str, pd.DataFrame] | None = None
+    candidate_signal_rows_loaded = 0
+    if use_panel_cache:
+        cache_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with cache_context:
+            panel_cache_metadata = build_signal_panel_cache(
+                needed_signals,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                force=rebuild_panel_cache,
+                verbose=verbose,
+            )
+            panel_cache_validation = validate_signal_panel_cache(
+                needed_signals,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                validate_checksum=False,
+            )
+        if not panel_cache_validation["fresh"].all():
+            stale = panel_cache_validation.loc[~panel_cache_validation["fresh"]]
+            raise ValueError(
+                "Panel cache validation failed for 03F: "
+                f"{stale[['signal_name', 'exists', 'fresh', 'error']].to_dict('records')}"
+            )
+        if "source_row_count" in panel_cache_metadata.columns:
+            candidate_signal_rows_loaded = int(panel_cache_metadata["source_row_count"].fillna(0).astype(int).sum())
+        signal_panels = load_signal_panels_from_cache(
             needed_signals,
-            current=True,
-            db_path=db_path,
-            chunksize=None,
+            cache_dir=panel_cache_dir,
+            validate_checksum=False,
         )
+        candidate_signals_long = pd.DataFrame()
+    else:
+        load_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with load_context:
+            candidate_signals_long = load_candidate_signals_by_names(
+                needed_signals,
+                current=True,
+                db_path=db_path,
+                chunksize=None,
+            )
+        candidate_signal_rows_loaded = len(candidate_signals_long)
 
     if verbose:
         print("03F signal reproducibility: running subset IC tests")
@@ -563,6 +617,7 @@ def run_03f_signal_reproducibility(
         run_id=resolved_run_id,
         reproducibility_version=reproducibility_version,
         method=method,
+        signal_panels=signal_panels,
     )
     reproducibility_summary = summarize_signal_reproducibility(reproducibility_results)
     reproducibility_gate = build_reproducibility_final_gate(
@@ -578,6 +633,7 @@ def run_03f_signal_reproducibility(
         results=reproducibility_results,
         summary=reproducibility_summary,
         gate=reproducibility_gate,
+        candidate_signal_rows_loaded=candidate_signal_rows_loaded,
     )
 
     saved_paths: dict[str, Path] = {}
@@ -601,7 +657,11 @@ def run_03f_signal_reproducibility(
         "health_table": health_table,
         "close_prices": close_prices,
         "candidate_signals_long": candidate_signals_long,
-        "candidate_signal_rows_loaded": len(candidate_signals_long),
+        "candidate_signal_rows_loaded": candidate_signal_rows_loaded,
+        "use_panel_cache": use_panel_cache,
+        "panel_cache_metadata": panel_cache_metadata,
+        "panel_cache_validation": panel_cache_validation,
+        "signal_panels": signal_panels,
         "reproducibility_results": reproducibility_results,
         "reproducibility_summary": reproducibility_summary,
         "reproducibility_gate": reproducibility_gate,
