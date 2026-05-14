@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sqlite3
+import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import pandas as pd
@@ -14,11 +17,13 @@ from src.constructed_alpha_wfv import (
     build_constructed_alpha_wfv_failure_breakdown,
     build_constructed_alpha_wfv_winner_summary,
     load_constructed_alpha_candidates,
+    pivot_alpha_panel,
     run_constructed_alpha_wfv,
     summarize_constructed_alpha_wfv,
 )
 from src.constructed_alpha_wfv_storage import save_constructed_alpha_wfv_outputs
 from src.db import load_price_table, load_table, table_exists
+from src.forward_returns import make_forward_returns
 from src.run_config import get_sqlite_db_path, make_run_id, make_run_timestamp
 from src.walkforward import generate_walkforward_windows
 
@@ -42,6 +47,39 @@ def _log(verbose: bool, message: str) -> None:
         print(message)
 
 
+def _memory_usage_mb() -> float | None:
+    try:
+        import psutil  # type: ignore[import-not-found]
+    except ImportError:
+        return None
+    try:
+        return psutil.Process().memory_info().rss / (1024 * 1024)
+    except Exception:
+        return None
+
+
+@contextmanager
+def _profile_block(profile_records: list[dict[str, object]], block_name: str):
+    memory_before = _memory_usage_mb()
+    started = time.perf_counter()
+    yield
+    elapsed = time.perf_counter() - started
+    memory_after = _memory_usage_mb()
+    profile_records.append(
+        {
+            "block": block_name,
+            "elapsed_seconds": elapsed,
+            "memory_before_mb": memory_before,
+            "memory_after_mb": memory_after,
+            "memory_delta_mb": (
+                memory_after - memory_before
+                if memory_before is not None and memory_after is not None
+                else None
+            ),
+        }
+    )
+
+
 def _require_input_tables(db_path: Path) -> None:
     missing_tables = [
         table_name
@@ -52,19 +90,37 @@ def _require_input_tables(db_path: Path) -> None:
         raise ValueError(f"Required 04B input tables are missing from {db_path}: {missing_tables}")
 
 
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def _load_alpha_rows_for_names(alpha_names: list[str], db_path: Path) -> pd.DataFrame:
+    if not alpha_names:
+        alpha_long_all = load_table("alpha_constructed_candidates_current", db_path=db_path)
+        return alpha_long_all.iloc[0:0].copy()
+    placeholders = ",".join("?" for _ in alpha_names)
+    query = f"""
+        SELECT Date, ticker, alpha_name, alpha_value
+        FROM {_quote_identifier("alpha_constructed_candidates_current")}
+        WHERE alpha_name IN ({placeholders})
+    """
+    with sqlite3.connect(db_path) as conn:
+        return pd.read_sql_query(query, conn, params=alpha_names)
+
+
 def _load_filtered_alpha_inputs(
     approved_constructed_alphas: pd.DataFrame,
     db_path: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    alpha_long_all = load_table("alpha_constructed_candidates_current", db_path=db_path)
-    alpha_names_found_in_long_table = (
-        sorted(alpha_long_all["alpha_name"].dropna().astype(str).unique().tolist())
-        if "alpha_name" in alpha_long_all.columns
-        else []
-    )
     approved_alpha_names = (
         approved_constructed_alphas["alpha_name"].dropna().astype(str).tolist()
         if not approved_constructed_alphas.empty
+        else []
+    )
+    alpha_long_all = _load_alpha_rows_for_names(approved_alpha_names, db_path)
+    alpha_names_found_in_long_table = (
+        sorted(alpha_long_all["alpha_name"].dropna().astype(str).unique().tolist())
+        if "alpha_name" in alpha_long_all.columns
         else []
     )
     approved_alpha_names_found = [
@@ -120,6 +176,17 @@ def _load_filtered_alpha_inputs(
         raise ValueError("Mismatch between approved alpha candidates and alpha names sent to WFV.")
 
     return alpha_long, validation
+
+
+def _build_alpha_panels(alpha_long: pd.DataFrame, alpha_names: list[str]) -> dict[str, pd.DataFrame]:
+    grouped_alpha_rows = {
+        str(alpha_name): group
+        for alpha_name, group in alpha_long.groupby("alpha_name", sort=False)
+    }
+    return {
+        alpha_name: pivot_alpha_panel(grouped_alpha_rows.get(alpha_name, alpha_long.iloc[0:0]), alpha_name)
+        for alpha_name in alpha_names
+    }
 
 
 def _build_validation_report(
@@ -219,43 +286,57 @@ def run_04b_alpha_wfv(
     resolved_db_path = Path(db_path) if db_path is not None else get_sqlite_db_path()
     resolved_run_id = run_id or make_run_id("constructed_alpha_wfv")
     run_timestamp = make_run_timestamp()
+    profile_records: list[dict[str, object]] = []
 
     _require_input_tables(resolved_db_path)
-    approved_constructed_alphas = load_constructed_alpha_candidates(db_path=resolved_db_path)
+    with _profile_block(profile_records, "loading 04A constructed alpha candidates"):
+        approved_constructed_alphas = load_constructed_alpha_candidates(db_path=resolved_db_path)
     if approved_constructed_alphas.empty:
         raise ValueError("No constructed alpha candidates approved for alpha validation.")
 
-    alpha_long, alpha_candidate_validation = _load_filtered_alpha_inputs(
-        approved_constructed_alphas,
-        resolved_db_path,
-    )
-    close_prices = load_price_table("clean_close_prices_current", db_path=resolved_db_path)
-    alpha_wfv_windows = generate_walkforward_windows(
-        close_prices.index,
-        train_size=TRAIN_SIZE,
-        test_size=TEST_SIZE,
-        purge_size=PURGE_SIZE,
-        embargo_size=EMBARGO_SIZE,
-    )
+    with _profile_block(profile_records, "candidate filtering"):
+        alpha_long, alpha_candidate_validation = _load_filtered_alpha_inputs(
+            approved_constructed_alphas,
+            resolved_db_path,
+        )
+        approved_alpha_names = (
+            approved_constructed_alphas["alpha_name"].dropna().astype(str).drop_duplicates().tolist()
+        )
+    with _profile_block(profile_records, "alpha panel construction"):
+        alpha_panels = _build_alpha_panels(alpha_long, approved_alpha_names)
+    with _profile_block(profile_records, "WFV window generation"):
+        close_prices = load_price_table("clean_close_prices_current", db_path=resolved_db_path)
+        alpha_wfv_windows = generate_walkforward_windows(
+            close_prices.index,
+            train_size=TRAIN_SIZE,
+            test_size=TEST_SIZE,
+            purge_size=PURGE_SIZE,
+            embargo_size=EMBARGO_SIZE,
+        )
+        forward_returns = make_forward_returns(close_prices, HORIZONS)
     if alpha_wfv_windows.empty:
         raise ValueError("WFV configuration produced no windows.")
 
-    alpha_wfv_results = run_constructed_alpha_wfv(
-        approved_alphas=approved_constructed_alphas,
-        alpha_long_df=alpha_long,
-        close_prices=close_prices,
-        windows=alpha_wfv_windows,
-        horizons=HORIZONS,
-        method=IC_METHOD,
-    )
-    alpha_wfv_summary = summarize_constructed_alpha_wfv(alpha_wfv_results)
-    alpha_wfv_gate = apply_constructed_alpha_wfv_gate(alpha_wfv_summary)
-    alpha_wfv_failure_breakdown = build_constructed_alpha_wfv_failure_breakdown(alpha_wfv_gate)
-    alpha_wfv_winner_summary = build_constructed_alpha_wfv_winner_summary(alpha_wfv_gate)
-    validation_report = _build_validation_report(
-        approved_constructed_alphas=approved_constructed_alphas,
-        alpha_wfv_gate=alpha_wfv_gate,
-    )
+    with _profile_block(profile_records, "WFV scoring/evaluation"):
+        alpha_wfv_results = run_constructed_alpha_wfv(
+            approved_alphas=approved_constructed_alphas,
+            alpha_long_df=alpha_long,
+            close_prices=close_prices,
+            windows=alpha_wfv_windows,
+            horizons=HORIZONS,
+            method=IC_METHOD,
+            alpha_panels=alpha_panels,
+            forward_returns=forward_returns,
+        )
+    with _profile_block(profile_records, "summary/gate creation"):
+        alpha_wfv_summary = summarize_constructed_alpha_wfv(alpha_wfv_results)
+        alpha_wfv_gate = apply_constructed_alpha_wfv_gate(alpha_wfv_summary)
+        alpha_wfv_failure_breakdown = build_constructed_alpha_wfv_failure_breakdown(alpha_wfv_gate)
+        alpha_wfv_winner_summary = build_constructed_alpha_wfv_winner_summary(alpha_wfv_gate)
+        validation_report = _build_validation_report(
+            approved_constructed_alphas=approved_constructed_alphas,
+            alpha_wfv_gate=alpha_wfv_gate,
+        )
     if not validation_report["passed"].all():
         failed = validation_report.loc[
             ~validation_report["passed"],
@@ -276,17 +357,29 @@ def run_04b_alpha_wfv(
 
     saved_paths = None
     if write:
-        saved_paths = save_constructed_alpha_wfv_outputs(
-            windows=alpha_wfv_windows,
-            window_results=alpha_wfv_results,
-            summary=alpha_wfv_summary,
-            gate=alpha_wfv_gate,
-            failure_breakdown=alpha_wfv_failure_breakdown,
-            winner_summary=alpha_wfv_winner_summary,
-            db_path=resolved_db_path,
-            run_id=resolved_run_id,
-            constructed_alpha_wfv_version=wfv_version,
+        with _profile_block(profile_records, "SQLite writes"):
+            saved_paths = save_constructed_alpha_wfv_outputs(
+                windows=alpha_wfv_windows,
+                window_results=alpha_wfv_results,
+                summary=alpha_wfv_summary,
+                gate=alpha_wfv_gate,
+                failure_breakdown=alpha_wfv_failure_breakdown,
+                winner_summary=alpha_wfv_winner_summary,
+                db_path=resolved_db_path,
+                run_id=resolved_run_id,
+                constructed_alpha_wfv_version=wfv_version,
+            )
+    else:
+        profile_records.append(
+            {
+                "block": "SQLite writes",
+                "elapsed_seconds": 0.0,
+                "memory_before_mb": _memory_usage_mb(),
+                "memory_after_mb": _memory_usage_mb(),
+                "memory_delta_mb": 0.0,
+            }
         )
+    profile = pd.DataFrame(profile_records)
 
     _log(verbose, f"Loaded 04B alpha WFV inputs from {resolved_db_path}")
     _log(verbose, f"  approved_constructed_alphas: {len(approved_constructed_alphas):,}")
@@ -319,6 +412,8 @@ def run_04b_alpha_wfv(
         "summary": summary,
         "approved_constructed_alphas": approved_constructed_alphas,
         "alpha_candidate_validation": alpha_candidate_validation,
+        "alpha_panels": alpha_panels,
+        "profile": profile,
         "saved_paths": saved_paths,
         "db_path": resolved_db_path,
         "run_id": resolved_run_id,

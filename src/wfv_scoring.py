@@ -66,6 +66,51 @@ def _score_period(
     }
 
 
+def _daily_ic_and_n_obs(
+    signal_panel: pd.DataFrame,
+    fwd_return_panel: pd.DataFrame,
+    method: str,
+) -> tuple[pd.Series, pd.Series]:
+    paired = pd.concat(
+        [
+            signal_panel.stack(future_stack=True).rename("signal"),
+            fwd_return_panel.stack(future_stack=True).rename("fwd_return"),
+        ],
+        axis=1,
+    ).dropna()
+
+    if paired.empty:
+        empty_index = pd.DatetimeIndex([], name=signal_panel.index.name)
+        return (
+            pd.Series(dtype=float, index=empty_index, name="mean_ic"),
+            pd.Series(dtype=int, index=empty_index, name="n_obs"),
+        )
+
+    grouped = paired.groupby(level=0, sort=True)
+    daily_ic = grouped.apply(_safe_corr, method=method).dropna()
+    n_obs = grouped.size()
+    return daily_ic, n_obs
+
+
+def _score_period_from_daily(
+    daily_ic: pd.Series,
+    n_obs_by_date: pd.Series,
+    start_date,
+    end_date,
+) -> dict[str, object]:
+    n_obs_slice = n_obs_by_date.loc[start_date:end_date]
+    n_obs = int(n_obs_slice.sum()) if not n_obs_slice.empty else 0
+    if n_obs == 0:
+        return {"mean_ic": np.nan, "positive_ic_rate": np.nan, "n_obs": 0}
+
+    ic_slice = daily_ic.loc[start_date:end_date].dropna()
+    return {
+        "mean_ic": float(ic_slice.mean()) if not ic_slice.empty else np.nan,
+        "positive_ic_rate": float((ic_slice > 0).mean()) if not ic_slice.empty else np.nan,
+        "n_obs": n_obs,
+    }
+
+
 def score_signal_wfv(
     signal_panel: pd.DataFrame,
     fwd_return_panel: pd.DataFrame,
@@ -79,22 +124,21 @@ def score_signal_wfv(
         raise ValueError("method must be one of: spearman, pearson, kendall.")
 
     signal, fwd = _align_panels(signal_panel, fwd_return_panel)
+    daily_ic, n_obs_by_date = _daily_ic_and_n_obs(signal, fwd, method=method)
     rows: list[dict[str, object]] = []
 
     for _, window in windows.iterrows():
-        train = _score_period(
-            signal,
-            fwd,
+        train = _score_period_from_daily(
+            daily_ic,
+            n_obs_by_date,
             window["train_start"],
             window["train_end"],
-            method=method,
         )
-        test = _score_period(
-            signal,
-            fwd,
+        test = _score_period_from_daily(
+            daily_ic,
+            n_obs_by_date,
             window["test_start"],
             window["test_end"],
-            method=method,
         )
         rows.append(
             {

@@ -74,18 +74,25 @@ def run_constructed_alpha_wfv(
     windows: pd.DataFrame,
     horizons: list[int] | tuple[int, ...] = (1, 5, 10, 20),
     method: str = "spearman",
+    alpha_panels: dict[str, pd.DataFrame] | None = None,
+    forward_returns: dict[int, pd.DataFrame] | None = None,
 ) -> pd.DataFrame:
     """Run existing WFV window IC scoring on constructed alpha candidates."""
     if approved_alphas.empty:
         return pd.DataFrame()
 
     horizon_values = sorted({int(horizon) for horizon in horizons})
-    forward_returns = make_forward_returns(close_prices, horizon_values)
+    if forward_returns is None:
+        forward_returns = make_forward_returns(close_prices, horizon_values)
     panel_cache: dict[str, pd.DataFrame] = {}
     rows: list[pd.DataFrame] = []
 
     for alpha_name in approved_alphas["alpha_name"].dropna().astype(str).unique():
-        if alpha_name not in panel_cache:
+        if alpha_panels is not None:
+            if alpha_name not in alpha_panels:
+                raise ValueError(f"alpha panel cache is missing alpha_name: {alpha_name}")
+            panel_cache[alpha_name] = alpha_panels[alpha_name]
+        elif alpha_name not in panel_cache:
             panel_cache[alpha_name] = pivot_alpha_panel(alpha_long_df, alpha_name)
 
         for horizon in horizon_values:
