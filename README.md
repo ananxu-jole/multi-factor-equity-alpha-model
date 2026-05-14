@@ -87,6 +87,24 @@ This baseline produced a long-only portfolio with positive return and a moderate
 
 ## How To Run
 
+Recommended fast full-platform dry run using local reproducible caches:
+
+```bash
+python pipelines/run_full_research_platform.py --dry-run --quiet --use-panel-cache --use-daily-ic-cache
+```
+
+Safe non-cached fallback:
+
+```bash
+python pipelines/run_full_research_platform.py --dry-run --quiet
+```
+
+Refresh local panel and daily-IC caches when inputs change:
+
+```bash
+python pipelines/run_full_research_platform.py --dry-run --quiet --use-panel-cache --use-daily-ic-cache --rebuild-panel-cache --rebuild-daily-ic-cache
+```
+
 Run the full extracted alpha-to-portfolio path without writing SQLite outputs:
 
 ```bash
@@ -110,6 +128,8 @@ Intentionally excluded items include:
 - SQLite database files.
 - Generated outputs under `outputs/`.
 - Large artifacts, checkpoints, and logs under `artifacts/`.
+- Local signal panel caches under `artifacts/panels/`.
+- Local daily IC caches under `artifacts/ic/`.
 - Notebook-heavy outputs and other large execution products.
 
 Directory README files document the intended commit behavior for `sql/`, `artifacts/`, `outputs/`, and `configs/`.
