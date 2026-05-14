@@ -10,6 +10,11 @@ import pandas as pd
 
 from src.db import load_price_table
 from src.forward_returns import make_forward_returns, validate_forward_return_panels
+from src.scoring.panel_cache import (
+    build_signal_panel_cache,
+    load_signal_panels_from_cache,
+    validate_signal_panel_cache,
+)
 from src.signal_storage import (
     load_and_pivot_signal_panels_by_names,
     load_candidate_signal_quality_gate,
@@ -555,6 +560,9 @@ def run_03_signal_scoring(
     method: str = IC_METHOD,
     min_score_obs: int = MIN_SCORE_OBS,
     min_gate_obs: int = MIN_GATE_OBS,
+    use_panel_cache: bool = False,
+    panel_cache_dir: str | Path | None = None,
+    rebuild_panel_cache: bool = False,
     write: bool = True,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -571,15 +579,45 @@ def run_03_signal_scoring(
 
     if verbose:
         print(f"03 signal scoring: loading and pivoting {len(approved_signal_names):,} approved signals")
-    load_context = nullcontext() if verbose else redirect_stdout(StringIO())
-    with load_context:
-        signal_panels = load_and_pivot_signal_panels_by_names(
+    panel_cache_validation = pd.DataFrame()
+    panel_cache_metadata = pd.DataFrame()
+    if use_panel_cache:
+        cache_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with cache_context:
+            panel_cache_metadata = build_signal_panel_cache(
+                approved_signal_names,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                force=rebuild_panel_cache,
+                verbose=verbose,
+            )
+            panel_cache_validation = validate_signal_panel_cache(
+                approved_signal_names,
+                db_path=db_path,
+                cache_dir=panel_cache_dir,
+                validate_checksum=False,
+            )
+        if not panel_cache_validation["fresh"].all():
+            stale = panel_cache_validation.loc[~panel_cache_validation["fresh"]]
+            raise ValueError(
+                "Panel cache validation failed for 03 signal scoring: "
+                f"{stale[['signal_name', 'exists', 'fresh', 'error']].to_dict('records')}"
+            )
+        signal_panels = load_signal_panels_from_cache(
             approved_signal_names,
-            current=True,
-            db_path=db_path,
-            duplicate_policy="raise",
-            chunksize=500_000,
+            cache_dir=panel_cache_dir,
+            validate_checksum=False,
         )
+    else:
+        load_context = nullcontext() if verbose else redirect_stdout(StringIO())
+        with load_context:
+            signal_panels = load_and_pivot_signal_panels_by_names(
+                approved_signal_names,
+                current=True,
+                db_path=db_path,
+                duplicate_policy="raise",
+                chunksize=500_000,
+            )
     validate_signal_panels(signal_panels, approved_signal_names)
 
     if verbose:
@@ -651,6 +689,9 @@ def run_03_signal_scoring(
         "quality_gate": quality_gate,
         "approved_candidates": approved_candidates,
         "approved_signal_names": approved_signal_names,
+        "use_panel_cache": use_panel_cache,
+        "panel_cache_metadata": panel_cache_metadata,
+        "panel_cache_validation": panel_cache_validation,
         "signal_panels": signal_panels,
         "close_prices": close_prices,
         "forward_returns": forward_returns,

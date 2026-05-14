@@ -93,6 +93,13 @@ def main() -> int:
         default=SCORING_VERSION,
         help="Signal scoring version label for dry-run output.",
     )
+    parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for dry-run parity.")
+    parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
+    parser.add_argument(
+        "--rebuild-panel-cache",
+        action="store_true",
+        help="Rebuild selected signal panel cache artifacts before running parity.",
+    )
     args = parser.parse_args()
 
     current = {
@@ -102,6 +109,9 @@ def main() -> int:
     dry_run = run_03_signal_scoring(
         db_path=args.db_path,
         scoring_version=args.scoring_version,
+        use_panel_cache=args.use_panel_cache,
+        panel_cache_dir=args.panel_cache_dir,
+        rebuild_panel_cache=args.rebuild_panel_cache,
         write=False,
         verbose=False,
     )

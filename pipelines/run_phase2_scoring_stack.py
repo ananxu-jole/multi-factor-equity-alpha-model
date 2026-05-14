@@ -36,6 +36,11 @@ def main() -> int:
         write=args.run,
         verbose=not args.quiet,
         stage_kwargs={
+            "03_signal_scoring": {
+                "use_panel_cache": args.use_panel_cache,
+                "panel_cache_dir": args.panel_cache_dir,
+                "rebuild_panel_cache": args.rebuild_panel_cache,
+            },
             "03c_signal_decay": {
                 "use_panel_cache": args.use_panel_cache,
                 "panel_cache_dir": args.panel_cache_dir,
