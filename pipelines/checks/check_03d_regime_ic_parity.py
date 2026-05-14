@@ -102,6 +102,13 @@ def main() -> int:
         action="store_true",
         help="Rebuild selected signal panel cache artifacts before parity comparison.",
     )
+    parser.add_argument("--use-daily-ic-cache", action="store_true", help="Use cached daily IC for dry-run parity.")
+    parser.add_argument("--daily-ic-cache-dir", default=None, help="Optional daily IC cache directory.")
+    parser.add_argument(
+        "--rebuild-daily-ic-cache",
+        action="store_true",
+        help="Rebuild selected daily IC cache artifacts before parity comparison.",
+    )
     args = parser.parse_args()
 
     current_features = load_table("regime_features_ic_current", db_path=args.db_path)
@@ -116,6 +123,9 @@ def main() -> int:
         use_panel_cache=args.use_panel_cache,
         panel_cache_dir=args.panel_cache_dir,
         rebuild_panel_cache=args.rebuild_panel_cache,
+        use_daily_ic_cache=args.use_daily_ic_cache,
+        daily_ic_cache_dir=args.daily_ic_cache_dir,
+        rebuild_daily_ic_cache=args.rebuild_daily_ic_cache,
         write=False,
         verbose=False,
     )

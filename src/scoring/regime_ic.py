@@ -11,6 +11,16 @@ import pandas as pd
 from src.db import load_price_table, load_table
 from src.forward_returns import make_forward_returns
 from src.run_config import make_run_id, make_run_timestamp
+from src.scoring.daily_ic_cache import (
+    DEFAULT_SOURCE_TABLE as DAILY_IC_SOURCE_TABLE,
+    daily_ic_config_hash,
+    daily_ic_frame_from_series,
+    daily_ic_series_from_frame,
+    forward_return_config_hash,
+    load_daily_ic_cache,
+    panel_checksum,
+    write_daily_ic_cache,
+)
 from src.scoring.panel_cache import (
     build_signal_panel_cache,
     load_signal_panels_from_cache,
@@ -238,6 +248,7 @@ def compute_daily_signal_ic_for_regime_columns(
     regime_features: pd.DataFrame,
     regime_columns: list[str] | tuple[str, ...],
     method: str = "spearman",
+    daily_ic_series: pd.Series | None = None,
 ) -> pd.DataFrame:
     """Compute daily IC once and attach each requested regime label column."""
     if method not in {"spearman", "pearson"}:
@@ -252,6 +263,29 @@ def compute_daily_signal_ic_for_regime_columns(
     regime_by_date = regimes.drop_duplicates("Date").set_index("Date")
     regime_by_date = regime_by_date.reindex(signal.index)
 
+    if daily_ic_series is None:
+        daily_ic_series = _daily_signal_ic_series(signal, forward, method=method)
+    else:
+        daily_ic_series = daily_ic_series.reindex(signal.index)
+
+    base = pd.DataFrame({"Date": signal.index, "daily_ic": daily_ic_series.to_numpy()})
+    frames: list[pd.DataFrame] = []
+    for regime_column in regime_columns:
+        frame = base.copy()
+        frame.insert(1, "regime_column", regime_column)
+        frame.insert(2, "regime_value", regime_by_date[regime_column].to_numpy())
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def _daily_signal_ic_series(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+    method: str = "spearman",
+) -> pd.Series:
+    if method not in {"spearman", "pearson"}:
+        raise ValueError("method must be 'spearman' or 'pearson'.")
+    signal, forward = _align_signal_forward(signal_panel, forward_returns_panel)
     daily_values: list[float] = []
     for date in signal.index:
         signal_row = signal.loc[date]
@@ -263,15 +297,107 @@ def compute_daily_signal_ic_for_regime_columns(
             else np.nan
         )
         daily_values.append(daily_ic)
+    return pd.Series(daily_values, index=signal.index, name="ic")
 
-    base = pd.DataFrame({"Date": signal.index, "daily_ic": daily_values})
-    frames: list[pd.DataFrame] = []
-    for regime_column in regime_columns:
-        frame = base.copy()
-        frame.insert(1, "regime_column", regime_column)
-        frame.insert(2, "regime_value", regime_by_date[regime_column].to_numpy())
-        frames.append(frame)
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+def _n_pairs_by_date(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+) -> pd.Series:
+    signal, forward = _align_signal_forward(signal_panel, forward_returns_panel)
+    values = [
+        int((signal.loc[date].notna() & forward.loc[date].notna()).sum())
+        for date in signal.index
+    ]
+    return pd.Series(values, index=signal.index, name="n_pairs")
+
+
+def _daily_ic_with_read_through_cache(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+    signal_name: str,
+    horizon: int,
+    method: str,
+    use_daily_ic_cache: bool,
+    daily_ic_cache_dir: str | Path | None,
+    rebuild_daily_ic_cache: bool,
+    cache_records: list[dict[str, object]] | None,
+) -> pd.Series:
+    if not use_daily_ic_cache:
+        return _daily_signal_ic_series(signal_panel, forward_returns_panel, method=method)
+
+    panel_hash = panel_checksum(signal_panel)
+    forward_hash = forward_return_config_hash(forward_returns_panel, horizon)
+    config_hash = daily_ic_config_hash(
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        source_table=DAILY_IC_SOURCE_TABLE,
+    )
+    cache_status = "miss"
+    if not rebuild_daily_ic_cache:
+        cached = load_daily_ic_cache(
+            signal_name=signal_name,
+            horizon=horizon,
+            ic_method=method,
+            config_hash=config_hash,
+            panel_checksum_sha256=panel_hash,
+            forward_config_hash=forward_hash,
+            source_table=DAILY_IC_SOURCE_TABLE,
+            cache_dir=daily_ic_cache_dir,
+        )
+        if cached is not None:
+            cache_status = "hit"
+            if cache_records is not None:
+                cache_records.append(
+                    {
+                        "signal_name": signal_name,
+                        "horizon": int(horizon),
+                        "config_hash": config_hash,
+                        "cache_status": cache_status,
+                        "rows": len(cached),
+                    }
+                )
+            return daily_ic_series_from_frame(cached)
+
+    daily_ic = _daily_signal_ic_series(signal_panel, forward_returns_panel, method=method)
+    n_pairs = _n_pairs_by_date(signal_panel, forward_returns_panel)
+    frame = daily_ic_frame_from_series(
+        daily_ic=daily_ic,
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        n_pairs=n_pairs,
+        source_table=DAILY_IC_SOURCE_TABLE,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        config_hash=config_hash,
+    )
+    paths = write_daily_ic_cache(
+        daily_ic=frame,
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        config_hash=config_hash,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        source_table=DAILY_IC_SOURCE_TABLE,
+        cache_dir=daily_ic_cache_dir,
+    )
+    if cache_records is not None:
+        cache_records.append(
+            {
+                "signal_name": signal_name,
+                "horizon": int(horizon),
+                "config_hash": config_hash,
+                "cache_status": "rebuilt" if rebuild_daily_ic_cache else cache_status,
+                "rows": len(frame),
+                "path": str(paths["daily_ic"]),
+            }
+        )
+    return daily_ic
 
 
 def summarize_regime_ic(daily_regime_ic: pd.DataFrame) -> pd.DataFrame:
@@ -606,6 +732,10 @@ def run_regime_ic_analysis(
     method: str = "spearman",
     profile_records: list[dict[str, object]] | None = None,
     signal_panels: dict[str, pd.DataFrame] | None = None,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
+    daily_ic_cache_records: list[dict[str, object]] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run regime-conditioned IC diagnostics for scored signal/horizon pairs."""
     regime_columns = list(
@@ -668,12 +798,24 @@ def run_regime_ic_analysis(
             horizon = int(row.horizon)
             if signal_name not in panel_cache:
                 raise ValueError(f"signal_name '{signal_name}' not found in candidate_signals_long.")
+            daily_ic_series = _daily_ic_with_read_through_cache(
+                signal_panel=panel_cache[signal_name],
+                forward_returns_panel=forward_returns[horizon],
+                signal_name=signal_name,
+                horizon=horizon,
+                method=method,
+                use_daily_ic_cache=use_daily_ic_cache,
+                daily_ic_cache_dir=daily_ic_cache_dir,
+                rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+                cache_records=daily_ic_cache_records,
+            )
             daily_ic = compute_daily_signal_ic_for_regime_columns(
                 signal_panel=panel_cache[signal_name],
                 forward_returns_panel=forward_returns[horizon],
                 regime_features=regime_features,
                 regime_columns=regime_columns,
                 method=method,
+                daily_ic_series=daily_ic_series,
             )
             daily_ic["signal_name"] = signal_name
             daily_ic["horizon"] = horizon
@@ -782,6 +924,9 @@ def run_03d_regime_ic(
     use_panel_cache: bool = False,
     panel_cache_dir: str | Path | None = None,
     rebuild_panel_cache: bool = False,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -849,6 +994,7 @@ def run_03d_regime_ic(
     if verbose:
         print("03D regime IC: running regime-conditioned IC analysis")
     compute_context = nullcontext() if verbose else redirect_stdout(StringIO())
+    daily_ic_cache_records: list[dict[str, object]] = []
     with compute_context:
         regime_features, daily_regime_ic, regime_summary, regime_fragility = run_regime_ic_analysis(
             candidate_signals_long=candidate_signals_long,
@@ -859,6 +1005,10 @@ def run_03d_regime_ic(
             method=method,
             profile_records=profile_records,
             signal_panels=signal_panels,
+            use_daily_ic_cache=use_daily_ic_cache,
+            daily_ic_cache_dir=daily_ic_cache_dir,
+            rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+            daily_ic_cache_records=daily_ic_cache_records,
         )
     with _profile_block(profile_records, "fragility/opportunity scoring"):
         metadata_columns = [
@@ -905,6 +1055,7 @@ def run_03d_regime_ic(
                 regime_ic_version=regime_ic_version,
             )
     profile = pd.DataFrame(profile_records)
+    daily_ic_cache_metadata = pd.DataFrame(daily_ic_cache_records)
 
     return {
         "run_id": resolved_run_id,
@@ -918,6 +1069,8 @@ def run_03d_regime_ic(
         "panel_cache_metadata": panel_cache_metadata,
         "panel_cache_validation": panel_cache_validation,
         "signal_panels": signal_panels,
+        "use_daily_ic_cache": use_daily_ic_cache,
+        "daily_ic_cache_metadata": daily_ic_cache_metadata,
         "close_prices": close_prices,
         "regime_features": regime_features,
         "daily_regime_ic": daily_regime_ic,

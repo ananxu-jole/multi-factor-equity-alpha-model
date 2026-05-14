@@ -10,6 +10,16 @@ import pandas as pd
 from src.db import load_price_table, load_table
 from src.forward_returns import make_forward_returns
 from src.run_config import make_run_id, make_run_timestamp
+from src.scoring.daily_ic_cache import (
+    DEFAULT_SOURCE_TABLE as DAILY_IC_SOURCE_TABLE,
+    daily_ic_config_hash,
+    daily_ic_frame_from_series,
+    daily_ic_series_from_frame,
+    forward_return_config_hash,
+    load_daily_ic_cache,
+    panel_checksum,
+    write_daily_ic_cache,
+)
 from src.scoring.decay_storage import save_signal_decay_outputs
 from src.scoring.panel_cache import (
     build_signal_panel_cache,
@@ -98,6 +108,106 @@ def compute_rolling_ic_series(
     daily_ic = _cross_sectional_ic_by_date(signal_panel, forward_returns_panel, method=method)
     rolling_ic = daily_ic.rolling(window=window, min_periods=window).mean()
     return pd.DataFrame({"Date": rolling_ic.index, "rolling_ic": rolling_ic.to_numpy()})
+
+
+def _n_pairs_by_date(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+) -> pd.Series:
+    signal, forward = _align_panels(signal_panel, forward_returns_panel)
+    values = [
+        int((signal.loc[date].notna() & forward.loc[date].notna()).sum())
+        for date in signal.index
+    ]
+    return pd.Series(values, index=signal.index, name="n_pairs")
+
+
+def _daily_ic_with_read_through_cache(
+    signal_panel: pd.DataFrame,
+    forward_returns_panel: pd.DataFrame,
+    signal_name: str,
+    horizon: int,
+    method: str,
+    use_daily_ic_cache: bool,
+    daily_ic_cache_dir: str | Path | None,
+    rebuild_daily_ic_cache: bool,
+    cache_records: list[dict[str, object]] | None,
+) -> pd.Series:
+    if not use_daily_ic_cache:
+        return _cross_sectional_ic_by_date(signal_panel, forward_returns_panel, method=method)
+
+    panel_hash = panel_checksum(signal_panel)
+    forward_hash = forward_return_config_hash(forward_returns_panel, horizon)
+    config_hash = daily_ic_config_hash(
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        source_table=DAILY_IC_SOURCE_TABLE,
+    )
+    cache_status = "miss"
+    if not rebuild_daily_ic_cache:
+        cached = load_daily_ic_cache(
+            signal_name=signal_name,
+            horizon=horizon,
+            ic_method=method,
+            config_hash=config_hash,
+            panel_checksum_sha256=panel_hash,
+            forward_config_hash=forward_hash,
+            source_table=DAILY_IC_SOURCE_TABLE,
+            cache_dir=daily_ic_cache_dir,
+        )
+        if cached is not None:
+            cache_status = "hit"
+            if cache_records is not None:
+                cache_records.append(
+                    {
+                        "signal_name": signal_name,
+                        "horizon": int(horizon),
+                        "config_hash": config_hash,
+                        "cache_status": cache_status,
+                        "rows": len(cached),
+                    }
+                )
+            return daily_ic_series_from_frame(cached)
+
+    daily_ic = _cross_sectional_ic_by_date(signal_panel, forward_returns_panel, method=method)
+    n_pairs = _n_pairs_by_date(signal_panel, forward_returns_panel)
+    frame = daily_ic_frame_from_series(
+        daily_ic=daily_ic,
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        n_pairs=n_pairs,
+        source_table=DAILY_IC_SOURCE_TABLE,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        config_hash=config_hash,
+    )
+    paths = write_daily_ic_cache(
+        daily_ic=frame,
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        config_hash=config_hash,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+        source_table=DAILY_IC_SOURCE_TABLE,
+        cache_dir=daily_ic_cache_dir,
+    )
+    if cache_records is not None:
+        cache_records.append(
+            {
+                "signal_name": signal_name,
+                "horizon": int(horizon),
+                "config_hash": config_hash,
+                "cache_status": "rebuilt" if rebuild_daily_ic_cache else cache_status,
+                "rows": len(frame),
+                "path": str(paths["daily_ic"]),
+            }
+        )
+    return daily_ic
 
 
 def _decay_slope(values: pd.Series) -> float:
@@ -295,6 +405,10 @@ def run_signal_decay_analysis(
     method: str = "spearman",
     min_rolling_obs: int = 8,
     signal_panels: dict[str, pd.DataFrame] | None = None,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
+    daily_ic_cache_records: list[dict[str, object]] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Run rolling IC and decay diagnostics for scored candidate signal/horizon pairs."""
     required_score_columns = {"signal_name", "horizon"}
@@ -335,12 +449,19 @@ def run_signal_decay_analysis(
         if signal_name not in panel_cache:
             raise ValueError(f"signal_name '{signal_name}' not found in candidate_signals_long.")
 
-        rolling_ic = compute_rolling_ic_series(
+        daily_ic = _daily_ic_with_read_through_cache(
             signal_panel=panel_cache[signal_name],
             forward_returns_panel=forward_returns[horizon],
-            window=window,
+            signal_name=signal_name,
+            horizon=horizon,
             method=method,
+            use_daily_ic_cache=use_daily_ic_cache,
+            daily_ic_cache_dir=daily_ic_cache_dir,
+            rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+            cache_records=daily_ic_cache_records,
         )
+        rolling_values = daily_ic.rolling(window=window, min_periods=window).mean()
+        rolling_ic = pd.DataFrame({"Date": rolling_values.index, "rolling_ic": rolling_values.to_numpy()})
         rolling_ic["signal_name"] = signal_name
         rolling_ic["horizon"] = horizon
         rolling_ic["method"] = method
@@ -437,6 +558,9 @@ def run_03c_signal_decay(
     use_panel_cache: bool = False,
     panel_cache_dir: str | Path | None = None,
     rebuild_panel_cache: bool = False,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -499,6 +623,7 @@ def run_03c_signal_decay(
     if verbose:
         print("03C signal decay: running rolling IC decay analysis")
     compute_context = nullcontext() if verbose else redirect_stdout(StringIO())
+    daily_ic_cache_records: list[dict[str, object]] = []
     with compute_context:
         decay_curve, decay_summary = run_signal_decay_analysis(
             signal_scores=signal_scores,
@@ -509,7 +634,12 @@ def run_03c_signal_decay(
             method=method,
             min_rolling_obs=min_rolling_obs,
             signal_panels=signal_panels,
+            use_daily_ic_cache=use_daily_ic_cache,
+            daily_ic_cache_dir=daily_ic_cache_dir,
+            rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+            daily_ic_cache_records=daily_ic_cache_records,
         )
+    daily_ic_cache_metadata = pd.DataFrame(daily_ic_cache_records)
     metadata_columns = [
         "signal_name",
         "signal_family",
@@ -559,6 +689,8 @@ def run_03c_signal_decay(
         "panel_cache_metadata": panel_cache_metadata,
         "panel_cache_validation": panel_cache_validation,
         "signal_panels": signal_panels,
+        "use_daily_ic_cache": use_daily_ic_cache,
+        "daily_ic_cache_metadata": daily_ic_cache_metadata,
         "close_prices": close_prices,
         "decay_curve": decay_curve,
         "decay_summary": decay_summary_enriched,
