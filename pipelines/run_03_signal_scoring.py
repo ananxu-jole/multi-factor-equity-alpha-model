@@ -87,6 +87,17 @@ def main() -> int:
         action="store_true",
         help="Rebuild selected signal panel cache artifacts before running.",
     )
+    parser.add_argument(
+        "--use-daily-ic-cache",
+        action="store_true",
+        help="Use cached full-universe daily IC stats for 03 signal scoring.",
+    )
+    parser.add_argument("--daily-ic-cache-dir", default=None, help="Optional daily IC cache directory.")
+    parser.add_argument(
+        "--rebuild-daily-ic-cache",
+        action="store_true",
+        help="Rebuild selected daily IC cache artifacts before running.",
+    )
     args = parser.parse_args()
 
     if args.describe:
@@ -100,6 +111,9 @@ def main() -> int:
         use_panel_cache=args.use_panel_cache,
         panel_cache_dir=args.panel_cache_dir,
         rebuild_panel_cache=args.rebuild_panel_cache,
+        use_daily_ic_cache=args.use_daily_ic_cache,
+        daily_ic_cache_dir=args.daily_ic_cache_dir,
+        rebuild_daily_ic_cache=args.rebuild_daily_ic_cache,
         write=args.run,
         verbose=not args.quiet,
     )

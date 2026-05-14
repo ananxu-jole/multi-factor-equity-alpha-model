@@ -10,6 +10,14 @@ import pandas as pd
 
 from src.db import load_price_table
 from src.forward_returns import make_forward_returns, validate_forward_return_panels
+from src.scoring.daily_ic_cache import (
+    daily_ic_config_hash,
+    daily_ic_frame_from_series,
+    forward_return_config_hash,
+    load_daily_ic_cache,
+    panel_checksum,
+    write_daily_ic_cache,
+)
 from src.scoring.panel_cache import (
     build_signal_panel_cache,
     load_signal_panels_from_cache,
@@ -54,6 +62,12 @@ REQUIRED_INPUT_TABLES = (
     "candidate_signals_current",
     "candidate_signal_quality_gate_current",
     "clean_close_prices_current",
+)
+DAILY_IC_SCORE_REQUIRED_COLUMNS = (
+    "daily_ic",
+    "n_pairs",
+    "sign_agree_count",
+    "sign_pair_count",
 )
 
 
@@ -177,6 +191,200 @@ def score_signal_against_forward_returns(
     return result
 
 
+def _score_from_daily_ic_frame(
+    daily_ic_frame: pd.DataFrame,
+    signal_name: str | None,
+    horizon: int | None,
+    method: str,
+    min_obs: int,
+    total_cells: int,
+) -> dict[str, object]:
+    n_pairs = pd.to_numeric(daily_ic_frame["n_pairs"], errors="coerce")
+    n_obs = int(n_pairs.fillna(0).sum())
+    missing_pct = float(1.0 - n_obs / total_cells) if total_cells else np.nan
+    result: dict[str, object] = {
+        "signal_name": signal_name,
+        "horizon": horizon,
+        "method": method,
+        "n_obs": n_obs,
+        "mean_ic": np.nan,
+        "median_ic": np.nan,
+        "ic_std": np.nan,
+        "ic_ir": np.nan,
+        "hit_rate": np.nan,
+        "positive_ic_rate": np.nan,
+        "missing_pct": missing_pct,
+    }
+    if n_obs < min_obs:
+        return result
+
+    sign_pairs = pd.to_numeric(daily_ic_frame["sign_pair_count"], errors="coerce").fillna(0)
+    sign_agree = pd.to_numeric(daily_ic_frame["sign_agree_count"], errors="coerce").fillna(0)
+    sign_pair_count = int(sign_pairs.sum())
+    hit_rate = float(sign_agree.sum() / sign_pair_count) if sign_pair_count else np.nan
+
+    ic_by_date = pd.to_numeric(daily_ic_frame["daily_ic"], errors="coerce").dropna()
+    if ic_by_date.empty:
+        result["hit_rate"] = hit_rate
+        return result
+
+    mean_ic = float(ic_by_date.mean())
+    ic_std = float(ic_by_date.std(ddof=1)) if len(ic_by_date) > 1 else np.nan
+    result.update(
+        {
+            "mean_ic": mean_ic,
+            "median_ic": float(ic_by_date.median()),
+            "ic_std": ic_std,
+            "ic_ir": float(mean_ic / ic_std) if ic_std and not pd.isna(ic_std) else np.nan,
+            "hit_rate": hit_rate,
+            "positive_ic_rate": float((ic_by_date > 0).mean()),
+        }
+    )
+    return result
+
+
+def _daily_ic_score_frame_from_panels(
+    signal_panel: pd.DataFrame,
+    fwd_return_panel: pd.DataFrame,
+    signal_name: str,
+    horizon: int,
+    method: str,
+    panel_checksum_sha256: str,
+    forward_config_hash: str,
+    config_hash: str,
+) -> tuple[pd.DataFrame, int]:
+    signal, fwd = _align_signal_and_forward_return_panels(signal_panel, fwd_return_panel)
+    total_cells = int(signal.size)
+    paired = pd.concat(
+        [
+            signal.stack(future_stack=True).rename("signal"),
+            fwd.stack(future_stack=True).rename("fwd_return"),
+        ],
+        axis=1,
+    ).dropna()
+    if paired.empty:
+        daily_ic = pd.Series(dtype=float, index=signal.index, name="ic")
+        n_pairs = pd.Series(0, index=signal.index, name="n_pairs")
+        sign_agree_count = pd.Series(0, index=signal.index, name="sign_agree_count")
+        sign_pair_count = pd.Series(0, index=signal.index, name="sign_pair_count")
+    else:
+        daily_ic = paired.groupby(level=0, sort=True).apply(_safe_corr, method=method)
+        daily_ic = daily_ic.reindex(signal.index)
+        n_pairs = paired.groupby(level=0, sort=True).size().reindex(signal.index, fill_value=0)
+        signal_sign = np.sign(paired["signal"])
+        return_sign = np.sign(paired["fwd_return"])
+        sign_mask = (signal_sign != 0) & (return_sign != 0)
+        sign_pair_count = sign_mask.groupby(level=0, sort=True).sum().reindex(signal.index, fill_value=0)
+        sign_agree = (signal_sign[sign_mask] == return_sign[sign_mask]).astype(int)
+        sign_agree_count = sign_agree.groupby(level=0, sort=True).sum().reindex(signal.index, fill_value=0)
+
+    frame = daily_ic_frame_from_series(
+        daily_ic=daily_ic,
+        signal_name=signal_name,
+        horizon=horizon,
+        ic_method=method,
+        n_pairs=n_pairs,
+        sign_agree_count=sign_agree_count,
+        sign_pair_count=sign_pair_count,
+        panel_checksum_sha256=panel_checksum_sha256,
+        forward_config_hash=forward_config_hash,
+        config_hash=config_hash,
+    )
+    return frame, total_cells
+
+
+def score_signal_against_forward_returns_cached(
+    signal_panel: pd.DataFrame,
+    fwd_return_panel: pd.DataFrame,
+    method: str = "spearman",
+    min_obs: int = 1000,
+    signal_name: str | None = None,
+    horizon: int | None = None,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
+    cache_records: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    if signal_name is None or horizon is None:
+        return score_signal_against_forward_returns(
+            signal_panel=signal_panel,
+            fwd_return_panel=fwd_return_panel,
+            method=method,
+            min_obs=min_obs,
+            signal_name=signal_name,
+            horizon=horizon,
+        )
+
+    signal, fwd = _align_signal_and_forward_return_panels(signal_panel, fwd_return_panel)
+    total_cells = int(signal.size)
+    panel_hash = panel_checksum(signal)
+    forward_hash = forward_return_config_hash(fwd, int(horizon))
+    config_hash = daily_ic_config_hash(
+        signal_name=signal_name,
+        horizon=int(horizon),
+        ic_method=method,
+        panel_checksum_sha256=panel_hash,
+        forward_config_hash=forward_hash,
+    )
+    cache_status = "hit"
+    cached = None
+    if not rebuild_daily_ic_cache:
+        cached = load_daily_ic_cache(
+            signal_name=signal_name,
+            horizon=int(horizon),
+            ic_method=method,
+            config_hash=config_hash,
+            panel_checksum_sha256=panel_hash,
+            forward_config_hash=forward_hash,
+            cache_dir=daily_ic_cache_dir,
+            required_columns=DAILY_IC_SCORE_REQUIRED_COLUMNS,
+        )
+
+    if cached is None:
+        cache_status = "miss"
+        cached, total_cells = _daily_ic_score_frame_from_panels(
+            signal_panel=signal,
+            fwd_return_panel=fwd,
+            signal_name=signal_name,
+            horizon=int(horizon),
+            method=method,
+            panel_checksum_sha256=panel_hash,
+            forward_config_hash=forward_hash,
+            config_hash=config_hash,
+        )
+        paths = write_daily_ic_cache(
+            daily_ic=cached,
+            signal_name=signal_name,
+            horizon=int(horizon),
+            ic_method=method,
+            config_hash=config_hash,
+            panel_checksum_sha256=panel_hash,
+            forward_config_hash=forward_hash,
+            cache_dir=daily_ic_cache_dir,
+        )
+    else:
+        paths = {}
+
+    if cache_records is not None:
+        cache_records.append(
+            {
+                "signal_name": signal_name,
+                "horizon": int(horizon),
+                "ic_method": method,
+                "cache_status": "rebuilt" if rebuild_daily_ic_cache and cache_status == "miss" else cache_status,
+                "config_hash": config_hash,
+                "path": str(paths.get("daily_ic", "")),
+            }
+        )
+    return _score_from_daily_ic_frame(
+        daily_ic_frame=cached,
+        signal_name=signal_name,
+        horizon=int(horizon),
+        method=method,
+        min_obs=min_obs,
+        total_cells=total_cells,
+    )
+
+
 def score_signal_library_multi_horizon(
     signals: dict[str, pd.DataFrame],
     forward_returns: dict[int, pd.DataFrame],
@@ -184,6 +392,10 @@ def score_signal_library_multi_horizon(
     horizons: list[int] | tuple[int, ...] = (1, 5, 10, 20),
     method: str = "spearman",
     min_obs: int = 1000,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
+    daily_ic_cache_records: list[dict[str, object]] | None = None,
 ) -> pd.DataFrame:
     """Score a library of signal panels against multiple forward return horizons."""
     rows: list[dict[str, object]] = []
@@ -196,14 +408,27 @@ def score_signal_library_multi_horizon(
         for horizon in horizons:
             if horizon not in forward_returns:
                 raise ValueError(f"forward_returns is missing horizon {horizon}.")
-            row = score_signal_against_forward_returns(
-                signal_panel=signal_panel,
-                fwd_return_panel=forward_returns[horizon],
-                method=method,
-                min_obs=min_obs,
-                signal_name=signal_name,
-                horizon=int(horizon),
-            )
+            if use_daily_ic_cache:
+                row = score_signal_against_forward_returns_cached(
+                    signal_panel=signal_panel,
+                    fwd_return_panel=forward_returns[horizon],
+                    method=method,
+                    min_obs=min_obs,
+                    signal_name=signal_name,
+                    horizon=int(horizon),
+                    daily_ic_cache_dir=daily_ic_cache_dir,
+                    rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+                    cache_records=daily_ic_cache_records,
+                )
+            else:
+                row = score_signal_against_forward_returns(
+                    signal_panel=signal_panel,
+                    fwd_return_panel=forward_returns[horizon],
+                    method=method,
+                    min_obs=min_obs,
+                    signal_name=signal_name,
+                    horizon=int(horizon),
+                )
             for key, value in signal_metadata.items():
                 if key not in row:
                     row[key] = value
@@ -563,6 +788,9 @@ def run_03_signal_scoring(
     use_panel_cache: bool = False,
     panel_cache_dir: str | Path | None = None,
     rebuild_panel_cache: bool = False,
+    use_daily_ic_cache: bool = False,
+    daily_ic_cache_dir: str | Path | None = None,
+    rebuild_daily_ic_cache: bool = False,
     write: bool = True,
     verbose: bool = True,
 ) -> dict[str, object]:
@@ -630,6 +858,7 @@ def run_03_signal_scoring(
 
     if verbose:
         print("03 signal scoring: scoring signal library across horizons")
+    daily_ic_cache_records: list[dict[str, object]] = []
     scores = score_signal_library_multi_horizon(
         signals=signal_panels,
         forward_returns=forward_returns,
@@ -637,8 +866,13 @@ def run_03_signal_scoring(
         horizons=list(horizons),
         method=method,
         min_obs=min_score_obs,
+        use_daily_ic_cache=use_daily_ic_cache,
+        daily_ic_cache_dir=daily_ic_cache_dir,
+        rebuild_daily_ic_cache=rebuild_daily_ic_cache,
+        daily_ic_cache_records=daily_ic_cache_records,
     )
     scores = scores.sort_values(["signal_name", "horizon"]).reset_index(drop=True)
+    daily_ic_cache_metadata = pd.DataFrame(daily_ic_cache_records)
 
     scoring_gate = apply_preliminary_scoring_gate(
         scores,
@@ -692,6 +926,8 @@ def run_03_signal_scoring(
         "use_panel_cache": use_panel_cache,
         "panel_cache_metadata": panel_cache_metadata,
         "panel_cache_validation": panel_cache_validation,
+        "use_daily_ic_cache": use_daily_ic_cache,
+        "daily_ic_cache_metadata": daily_ic_cache_metadata,
         "signal_panels": signal_panels,
         "close_prices": close_prices,
         "forward_returns": forward_returns,
@@ -738,6 +974,7 @@ __all__ = [
     "interpret_signal_direction",
     "run_03_signal_scoring",
     "score_signal_against_forward_returns",
+    "score_signal_against_forward_returns_cached",
     "score_signal_library_multi_horizon",
     "select_approved_scoring_candidates",
     "validate_signal_panels",

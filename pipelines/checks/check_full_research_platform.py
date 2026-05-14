@@ -18,7 +18,7 @@ def main() -> int:
     parser.add_argument("--db-path", default=None, help="Optional SQLite database path override.")
     parser.add_argument("--use-panel-cache", action="store_true", help="Use cached signal panels for 03C, 03D, and 03F.")
     parser.add_argument("--panel-cache-dir", default=None, help="Optional signal panel cache directory.")
-    parser.add_argument("--use-daily-ic-cache", action="store_true", help="Use cached full-universe signal daily IC for 03C and 03D.")
+    parser.add_argument("--use-daily-ic-cache", action="store_true", help="Use cached full-universe signal daily IC for 03, 03C, and 03D.")
     parser.add_argument("--daily-ic-cache-dir", default=None, help="Optional daily IC cache directory.")
     args = parser.parse_args()
     output = run_stage_specs(
@@ -30,6 +30,8 @@ def main() -> int:
             "03_signal_scoring": {
                 "use_panel_cache": args.use_panel_cache,
                 "panel_cache_dir": args.panel_cache_dir,
+                "use_daily_ic_cache": args.use_daily_ic_cache,
+                "daily_ic_cache_dir": args.daily_ic_cache_dir,
             },
             "03c_signal_decay": {
                 "use_panel_cache": args.use_panel_cache,

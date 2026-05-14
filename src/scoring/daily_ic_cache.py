@@ -172,6 +172,7 @@ def load_daily_ic_cache(
     forward_config_hash: str,
     source_table: str = DEFAULT_SOURCE_TABLE,
     cache_dir: str | Path | None = None,
+    required_columns: list[str] | tuple[str, ...] | None = None,
 ) -> pd.DataFrame | None:
     if not parquet_supported():
         raise ImportError("Parquet support requires pyarrow or fastparquet.")
@@ -192,6 +193,10 @@ def load_daily_ic_cache(
     ):
         return None
     daily_ic = pd.read_parquet(paths["daily_ic"])
+    if required_columns:
+        missing_columns = [column for column in required_columns if column not in daily_ic.columns]
+        if missing_columns:
+            return None
     daily_ic["Date"] = pd.to_datetime(daily_ic["Date"], errors="raise")
     daily_ic = daily_ic.sort_values("Date", kind="mergesort").reset_index(drop=True)
     if not _metadata_matches(
@@ -251,6 +256,8 @@ def daily_ic_frame_from_series(
     horizon: int,
     ic_method: str,
     n_pairs: pd.Series | None = None,
+    sign_agree_count: pd.Series | None = None,
+    sign_pair_count: pd.Series | None = None,
     source_table: str = DEFAULT_SOURCE_TABLE,
     universe_version: str | None = None,
     panel_checksum_sha256: str | None = None,
@@ -271,6 +278,12 @@ def daily_ic_frame_from_series(
     else:
         aligned_pairs = n_pairs.reindex(daily_ic.index)
         frame["n_pairs"] = pd.to_numeric(aligned_pairs.to_numpy(), errors="coerce")
+    if sign_agree_count is not None:
+        aligned_sign_agree = sign_agree_count.reindex(daily_ic.index)
+        frame["sign_agree_count"] = pd.to_numeric(aligned_sign_agree.to_numpy(), errors="coerce")
+    if sign_pair_count is not None:
+        aligned_sign_pairs = sign_pair_count.reindex(daily_ic.index)
+        frame["sign_pair_count"] = pd.to_numeric(aligned_sign_pairs.to_numpy(), errors="coerce")
     frame["universe_version"] = universe_version
     frame["source_table"] = source_table
     frame["panel_checksum_sha256"] = panel_checksum_sha256
