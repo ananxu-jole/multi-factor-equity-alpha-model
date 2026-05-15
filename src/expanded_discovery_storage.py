@@ -324,9 +324,175 @@ def promote_selected_expanded_discovery_to_main_universe(
     return report, diagnostics
 
 
+def promote_expansion_batch_to_main_universe(
+    expansion_batch: str,
+    db_path: str | Path | None = None,
+    run_id: str | None = None,
+    discovery_version: str | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Promote structurally passing expanded-discovery batch signals to the main universe."""
+    if run_id is None:
+        raise ValueError("run_id is required.")
+    if discovery_version is None:
+        raise ValueError("discovery_version is required.")
+    db_path = Path(db_path) if db_path is not None else get_sqlite_db_path()
+
+    with sqlite3.connect(db_path) as conn:
+        metadata = _read_table(conn, EXPANDED_DISCOVERY_TABLES["metadata"][0])
+        quality = _read_table(conn, EXPANDED_DISCOVERY_TABLES["quality"][0])
+        if metadata.empty or quality.empty:
+            raise ValueError("Expanded discovery metadata and quality tables must be populated before promotion.")
+
+        batch_metadata = metadata.loc[
+            metadata.get("expansion_batch", pd.Series("", index=metadata.index)).astype(str).eq(expansion_batch)
+        ].copy()
+        batch_names = sorted(batch_metadata["signal_name"].dropna().astype(str).unique())
+        quality_batch = quality.loc[quality["signal_name"].astype(str).isin(batch_names)].copy()
+        structural_pass = quality_batch.get(
+            "structural_quality_pass",
+            pd.Series(False, index=quality_batch.index),
+        ).map(lambda value: str(value).lower() in {"1", "true", "yes"})
+        structural_pass_names = sorted(
+            quality_batch.loc[structural_pass, "signal_name"].dropna().astype(str).unique()
+        )
+
+        main_metadata = _read_table(conn, MAIN_SIGNAL_TABLES["metadata"][0])
+        main_quality = _read_table(conn, MAIN_SIGNAL_TABLES["quality"][0])
+        main_quality_gate = _read_table(conn, MAIN_SIGNAL_TABLES["quality_gate"][0])
+        replace_names = sorted(set(structural_pass_names).intersection(
+            set(main_metadata.get("signal_name", pd.Series(dtype=str)).dropna().astype(str))
+        ))
+        integration_names = structural_pass_names
+
+        updated_metadata = main_metadata.loc[
+            ~main_metadata.get("signal_name", pd.Series(dtype=str)).astype(str).isin(replace_names)
+        ].copy()
+        updated_quality = main_quality.loc[
+            ~main_quality.get("signal_name", pd.Series(dtype=str)).astype(str).isin(replace_names)
+        ].copy()
+        updated_quality_gate = main_quality_gate.loc[
+            ~main_quality_gate.get("signal_name", pd.Series(dtype=str)).astype(str).isin(replace_names)
+        ].copy()
+
+        if integration_names:
+            metadata_to_add = _main_metadata_from_expanded(
+                metadata.loc[metadata["signal_name"].astype(str).isin(integration_names)].copy(),
+                updated_metadata.columns.tolist(),
+                discovery_version,
+            )
+            quality_to_add = _main_quality_from_expanded(
+                quality.loc[quality["signal_name"].astype(str).isin(integration_names)].copy(),
+                updated_quality.columns.tolist(),
+                discovery_version,
+            )
+            quality_gate_to_add = _main_quality_from_expanded(
+                quality.loc[quality["signal_name"].astype(str).isin(integration_names)].copy(),
+                updated_quality_gate.columns.tolist(),
+                discovery_version,
+            )
+            updated_metadata = pd.concat([updated_metadata, metadata_to_add], ignore_index=True).drop_duplicates("signal_name", keep="last")
+            updated_quality = pd.concat([updated_quality, quality_to_add], ignore_index=True).drop_duplicates("signal_name", keep="last")
+            updated_quality_gate = pd.concat([updated_quality_gate, quality_gate_to_add], ignore_index=True).drop_duplicates("signal_name", keep="last")
+
+            placeholders = ",".join("?" for _ in integration_names)
+            conn.execute(
+                f"DELETE FROM {_quote_identifier(MAIN_SIGNAL_TABLES['signals'][0])} "
+                f"WHERE signal_name IN ({placeholders})",
+                integration_names,
+            )
+            signal_columns = [
+                row[1] for row in conn.execute(
+                    f"PRAGMA table_info({_quote_identifier(MAIN_SIGNAL_TABLES['signals'][0])})"
+                ).fetchall()
+            ]
+            expanded_columns = [
+                row[1] for row in conn.execute(
+                    f"PRAGMA table_info({_quote_identifier(EXPANDED_DISCOVERY_TABLES['signals'][0])})"
+                ).fetchall()
+            ]
+            selected_columns = [column for column in signal_columns if column in expanded_columns]
+            select_expr = ", ".join(
+                f"'{discovery_version}' AS signal_version" if column == "signal_version" else _quote_identifier(column)
+                for column in selected_columns
+            )
+            column_expr = ", ".join(_quote_identifier(column) for column in selected_columns)
+            insert_sql = (
+                f"INSERT INTO {_quote_identifier(MAIN_SIGNAL_TABLES['signals'][0])} ({column_expr}) "
+                f"SELECT {select_expr} FROM {_quote_identifier(EXPANDED_DISCOVERY_TABLES['signals'][0])} "
+                f"WHERE signal_name IN ({placeholders})"
+            )
+            conn.execute(insert_sql, integration_names)
+            conn.execute(
+                insert_sql.replace(
+                    _quote_identifier(MAIN_SIGNAL_TABLES["signals"][0]),
+                    _quote_identifier(MAIN_SIGNAL_TABLES["signals"][1]),
+                    1,
+                ),
+                integration_names,
+            )
+
+        family_summary = build_signal_family_summary(updated_quality)
+        _write_sqlite_table(updated_metadata, MAIN_SIGNAL_TABLES["metadata"][0], conn, if_exists="replace")
+        _write_sqlite_table(updated_metadata, MAIN_SIGNAL_TABLES["metadata"][1], conn, if_exists="append")
+        _write_sqlite_table(updated_quality, MAIN_SIGNAL_TABLES["quality"][0], conn, if_exists="replace")
+        _write_sqlite_table(updated_quality, MAIN_SIGNAL_TABLES["quality"][1], conn, if_exists="append")
+        _write_sqlite_table(updated_quality_gate, MAIN_SIGNAL_TABLES["quality_gate"][0], conn, if_exists="replace")
+        _write_sqlite_table(updated_quality_gate, MAIN_SIGNAL_TABLES["quality_gate"][1], conn, if_exists="append")
+        _write_sqlite_table(family_summary, MAIN_SIGNAL_TABLES["family_summary"][0], conn, if_exists="replace")
+        _write_sqlite_table(family_summary, MAIN_SIGNAL_TABLES["family_summary"][1], conn, if_exists="append")
+
+        if integration_names:
+            duplicate_placeholders = ",".join("?" for _ in integration_names)
+            duplicate_candidate_rows = int(
+                conn.execute(
+                    f"""
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT signal_name, Date, ticker, COUNT(*) AS n_rows
+                        FROM {_quote_identifier(MAIN_SIGNAL_TABLES['signals'][0])}
+                        WHERE signal_name IN ({duplicate_placeholders})
+                        GROUP BY signal_name, Date, ticker
+                        HAVING n_rows > 1
+                    )
+                    """,
+                    integration_names,
+                ).fetchone()[0]
+            )
+        else:
+            duplicate_candidate_rows = 0
+
+        report = pd.DataFrame(
+            [
+                {
+                    "run_id": run_id,
+                    "discovery_version": discovery_version,
+                    "expansion_batch": expansion_batch,
+                    "n_batch_signals": len(batch_names),
+                    "n_structural_pass": len(structural_pass_names),
+                    "n_promoted": len(integration_names),
+                    "n_refreshed": len(replace_names),
+                    "integration_status": "SUCCESS",
+                    "notes": "Structurally passing expansion-batch candidates promoted without changing downstream gates.",
+                }
+            ]
+        )
+        diagnostics = pd.DataFrame(
+            [
+                {"check": "batch_metadata_present", "passed": len(batch_names) > 0},
+                {"check": "all_promoted_names_structural_pass", "passed": set(integration_names).issubset(structural_pass_names)},
+                {"check": "no_duplicate_promoted_signal_date_ticker_rows", "passed": duplicate_candidate_rows == 0},
+            ]
+        )
+        _write_sqlite_table(report, EXPANDED_DISCOVERY_TABLES["integration_report"][0], conn, if_exists="replace")
+        _write_sqlite_table(report, EXPANDED_DISCOVERY_TABLES["integration_report"][1], conn, if_exists="append")
+
+    return report, diagnostics
+
+
 __all__ = [
     "EXPANDED_DISCOVERY_TABLES",
     "MAIN_SIGNAL_TABLES",
+    "promote_expansion_batch_to_main_universe",
     "promote_selected_expanded_discovery_to_main_universe",
     "save_expanded_discovery_outputs",
 ]

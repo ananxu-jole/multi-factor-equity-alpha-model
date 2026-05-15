@@ -109,6 +109,9 @@ def _save_wfv_candidates(
 def build_bridge_candidates(
     db_path: str | Path | None = None,
     include_diagnostics: bool = False,
+    candidate_names: tuple[str, ...] | None = None,
+    expansion_batch: str = EXPANSION_BATCH,
+    required_horizons: dict[str, int] | None = None,
 ) -> pd.DataFrame:
     """Build an allowlisted expanded-discovery WFV bridge candidate set."""
     metadata = load_table("candidate_signal_metadata_current", db_path=db_path)
@@ -117,9 +120,12 @@ def build_bridge_candidates(
     best_horizon = load_table("signal_best_horizon_current", db_path=db_path)
     decay = load_table("signal_decay_summary_current", db_path=db_path)
 
-    allowed_names = list(PRIMARY_CANDIDATES)
-    if include_diagnostics:
-        allowed_names.extend(DIAGNOSTIC_CANDIDATES)
+    if candidate_names is None:
+        allowed_names = list(PRIMARY_CANDIDATES)
+        if include_diagnostics:
+            allowed_names.extend(DIAGNOSTIC_CANDIDATES)
+    else:
+        allowed_names = list(candidate_names)
 
     batch_metadata = metadata.loc[
         metadata["signal_name"].astype(str).isin(allowed_names)
@@ -127,12 +133,12 @@ def build_bridge_candidates(
         & metadata.get("signal_version", pd.Series("", index=metadata.index)).astype(str).ne("")
     ].copy()
     if "expansion_batch" in batch_metadata.columns:
-        batch_metadata = batch_metadata.loc[batch_metadata["expansion_batch"].astype(str).eq(EXPANSION_BATCH)]
+        batch_metadata = batch_metadata.loc[batch_metadata["expansion_batch"].astype(str).eq(expansion_batch)]
     else:
         expanded_metadata = load_table("expanded_discovery_metadata_current", db_path=db_path)
         batch_names = set(
             expanded_metadata.loc[
-                expanded_metadata.get("expansion_batch", pd.Series("", index=expanded_metadata.index)).astype(str).eq(EXPANSION_BATCH),
+                expanded_metadata.get("expansion_batch", pd.Series("", index=expanded_metadata.index)).astype(str).eq(expansion_batch),
                 "signal_name",
             ].astype(str)
         )
@@ -187,21 +193,33 @@ def build_bridge_candidates(
         & candidates["decay_status"].isin(["STABLE", "UNSTABLE"])
         & candidates["decay_risk_flag"].ne("HIGH_DECAY_RISK")
     ].copy()
+    if required_horizons:
+        required = pd.Series(required_horizons, name="required_horizon")
+        candidates = candidates.merge(required, left_on="signal_name", right_index=True, how="left")
+        candidates = candidates.loc[
+            candidates["required_horizon"].isna()
+            | candidates["horizon"].astype(int).eq(candidates["required_horizon"].astype(int))
+        ].drop(columns=["required_horizon"])
 
     if candidates.empty:
         return candidates
 
-    candidates["candidate_tier"] = candidates["signal_name"].map(
-        {name: "EXPANSION_BRIDGE_PRIMARY" for name in PRIMARY_CANDIDATES}
-        | {name: "EXPANSION_BRIDGE_DIAGNOSTIC" for name in DIAGNOSTIC_CANDIDATES}
-    )
-    candidates["bridge_source"] = EXPANSION_BATCH
-    candidates["bridge_reason"] = candidates["candidate_tier"].map(
-        {
+    if candidate_names is None:
+        candidates["candidate_tier"] = candidates["signal_name"].map(
+            {name: "EXPANSION_BRIDGE_PRIMARY" for name in PRIMARY_CANDIDATES}
+            | {name: "EXPANSION_BRIDGE_DIAGNOSTIC" for name in DIAGNOSTIC_CANDIDATES}
+        )
+        reason_map = {
             "EXPANSION_BRIDGE_PRIMARY": "Allowlisted Batch 1 WATCHLIST signal for controlled signal WFV bridge.",
             "EXPANSION_BRIDGE_DIAGNOSTIC": "Allowlisted Batch 1 diagnostic WATCHLIST signal for controlled signal WFV bridge.",
         }
-    )
+    else:
+        candidates["candidate_tier"] = "EXPANSION_BRIDGE_PRIMARY"
+        reason_map = {
+            "EXPANSION_BRIDGE_PRIMARY": "Allowlisted WATCHLIST signal for controlled signal WFV bridge.",
+        }
+    candidates["bridge_source"] = expansion_batch
+    candidates["bridge_reason"] = candidates["candidate_tier"].map(reason_map)
     columns = [
         "signal_name",
         "horizon",
@@ -223,11 +241,20 @@ def run_03b_signal_wfv_bridge(
     run_id: str | None = None,
     wfv_version: str = BRIDGE_VERSION,
     include_diagnostics: bool = False,
+    candidate_names: tuple[str, ...] | None = None,
+    expansion_batch: str = EXPANSION_BATCH,
+    required_horizons: dict[str, int] | None = None,
     write: bool = False,
     verbose: bool = True,
 ) -> dict[str, object]:
     resolved_run_id = run_id or make_run_id(prefix="phase2_signal_wfv_bridge")
-    candidates = build_bridge_candidates(db_path=db_path, include_diagnostics=include_diagnostics)
+    candidates = build_bridge_candidates(
+        db_path=db_path,
+        include_diagnostics=include_diagnostics,
+        candidate_names=candidate_names,
+        expansion_batch=expansion_batch,
+        required_horizons=required_horizons,
+    )
 
     close_prices = load_price_table("clean_close_prices_current", db_path=db_path)
     windows = generate_walkforward_windows(
@@ -285,6 +312,7 @@ def run_03b_signal_wfv_bridge(
             {"metric": "run_id", "value": resolved_run_id},
             {"metric": "wfv_version", "value": wfv_version},
             {"metric": "include_diagnostics", "value": bool(include_diagnostics)},
+            {"metric": "expansion_batch", "value": expansion_batch},
             {"metric": "candidate_rows", "value": len(candidates)},
             {"metric": "window_rows", "value": len(windows)},
             {"metric": "window_result_rows", "value": len(window_results)},
@@ -383,17 +411,44 @@ def main() -> int:
         action="store_true",
         help="Include diagnostic Batch 1 WATCHLIST signals in addition to primary bridge candidates.",
     )
+    parser.add_argument(
+        "--candidate-name",
+        action="append",
+        default=None,
+        help="Optional explicit allowlisted signal name. May be supplied more than once.",
+    )
+    parser.add_argument(
+        "--expansion-batch",
+        default=EXPANSION_BATCH,
+        help="Expansion batch label required for bridge candidate admission.",
+    )
+    parser.add_argument(
+        "--required-horizon",
+        action="append",
+        default=None,
+        help="Optional required horizon in signal_name:horizon form, e.g. trend_consistency_20_60_persistent:20.",
+    )
     args = parser.parse_args()
 
     if args.describe:
         _print_description()
         return 0
 
+    required_horizons = {}
+    for item in args.required_horizon or []:
+        if ":" not in item:
+            raise ValueError("--required-horizon must be in signal_name:horizon form.")
+        name, horizon = item.split(":", 1)
+        required_horizons[name] = int(horizon)
+
     result = run_03b_signal_wfv_bridge(
         db_path=args.db_path,
         run_id=args.run_id,
         wfv_version=args.wfv_version,
         include_diagnostics=args.include_diagnostics,
+        candidate_names=tuple(args.candidate_name) if args.candidate_name else None,
+        expansion_batch=args.expansion_batch,
+        required_horizons=required_horizons or None,
         write=args.run,
         verbose=not args.quiet,
     )

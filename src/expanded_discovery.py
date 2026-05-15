@@ -8,6 +8,8 @@ import pandas as pd
 
 
 EXPANDED_DISCOVERY_VERSION = "phase2_expanded_discovery_v1"
+EXPANSION_BATCH_VERSION = "phase2_expansion_batch_v1"
+EXPANSION_BATCH_V2_VERSION = "phase2_expansion_batch_v2"
 EXPANDED_DISCOVERY_SOURCE = "expanded_discovery"
 CORE_ALPHA_NAME = "alpha_regime_blend_dynamic_v4_smooth"
 DISCOVERY_HORIZONS = [1, 5, 10, 20]
@@ -23,6 +25,15 @@ class ExpandedSignalSpec:
     data_dependencies: tuple[str, ...]
     intended_alpha_sleeve: str = "ORTHOGONAL_DIVERSIFIER"
     parameters: dict[str, object] | None = None
+    description: str = ""
+    expected_direction: str = ""
+    economic_intuition: str = ""
+    required_inputs: tuple[str, ...] = ()
+    known_risks: str = ""
+    expansion_batch: str = ""
+    refinement_source: str = ""
+    targeted_failure_mode: str = ""
+    expected_improvement: str = ""
 
 
 EXPANDED_SIGNAL_SPECS = [
@@ -47,6 +58,161 @@ EXPANDED_SIGNAL_SPECS = [
     ExpandedSignalSpec("expanded_drawdown_recovery_20", "quality_stability", "drawdown_recovery", 20, "higher_is_recovering_from_drawdown", ("close",)),
     ExpandedSignalSpec("expanded_trend_stability_20", "quality_stability", "trend_stability", 20, "higher_is_stable_positive_trend", ("close",)),
     ExpandedSignalSpec("expanded_return_consistency_20", "quality_stability", "return_consistency", 20, "higher_is_consistent_positive_returns", ("close",)),
+    ExpandedSignalSpec(
+        "vol_compression_breakout_20_60",
+        "volatility_structure",
+        "vol_compression_breakout",
+        60,
+        "higher_is_volatility_compression_vs_60d_baseline",
+        ("close",),
+        parameters={"fast": 20, "slow": 60},
+        description="Realized volatility compression using 20-day volatility versus a 60-day baseline.",
+        expected_direction="Higher values indicate compressed realized volatility; expected positive convexity/continuation candidate.",
+        economic_intuition="Sustained compression can precede tradable volatility expansion and fresh directional information.",
+        required_inputs=("close",),
+        known_risks="May overlap with range-compression signals and can be regime dependent.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "downside_vol_asymmetry_20",
+        "volatility_structure",
+        "downside_vol_asymmetry",
+        20,
+        "higher_is_lower_downside_vol_dominance",
+        ("close",),
+        description="Downside realized volatility share over a 20-day window, oriented so lower downside dominance ranks higher.",
+        expected_direction="Higher values are expected to be more favorable because downside volatility is less dominant.",
+        economic_intuition="Names with less downside volatility concentration may have cleaner risk-adjusted continuation behavior.",
+        required_inputs=("close",),
+        known_risks="May behave defensively and overlap with low-volatility quality effects.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "index_relative_reversal_5",
+        "residual_relative_value",
+        "index_relative_reversal",
+        5,
+        "higher_is_more_oversold_vs_universe",
+        ("close",),
+        description="Negative 5-day stock return residual versus the equal-weight universe return.",
+        expected_direction="Higher values indicate recent underperformance versus the universe and a possible reversal edge.",
+        economic_intuition="Short-horizon idiosyncratic underperformance can mean-revert after broad market movement is removed.",
+        required_inputs=("close",),
+        known_risks="Can overlap with existing mean-reversion and residual-return signals.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "smooth_trend_persistence_60",
+        "trend_quality",
+        "smooth_trend_persistence",
+        60,
+        "higher_is_smoother_positive_trend",
+        ("close",),
+        description="60-day return divided by 60-day absolute-return path length.",
+        expected_direction="Higher values indicate smoother positive trend persistence.",
+        economic_intuition="A smoother path may indicate more durable institutional accumulation than jumpy raw momentum.",
+        required_inputs=("close",),
+        known_risks="May lag sharp reversals and overlap with momentum quality.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "trend_consistency_20_60",
+        "trend_quality",
+        "trend_consistency_20_60",
+        60,
+        "higher_is_consistent_intermediate_positive_trend",
+        ("close",),
+        parameters={"return_window": 5, "consistency_window": 60},
+        description="Share of positive rolling 5-day returns over 60 days, signed by the 60-day return direction.",
+        expected_direction="Higher values indicate consistent positive intermediate trend.",
+        economic_intuition="Persistent smaller wins may be more robust than a single large trailing return.",
+        required_inputs=("close",),
+        known_risks="Can be slow to react near regime turns.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "percentile_rank_stability_20",
+        "breadth_cross_sectional_context",
+        "percentile_rank_stability",
+        20,
+        "higher_is_stable_relative_strength_leadership",
+        ("close",),
+        description="Cross-sectional 20-day return percentile minus recent instability of that percentile rank.",
+        expected_direction="Higher values indicate stable relative-strength leadership.",
+        economic_intuition="Stable leadership may identify names with persistent sponsorship rather than noisy one-day jumps.",
+        required_inputs=("close",),
+        known_risks="May overlap with relative strength and can penalize emerging breakouts.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "volume_flow_ratio_5_20",
+        "liquidity_flow",
+        "volume_flow_ratio",
+        20,
+        "higher_is_rising_recent_dollar_volume",
+        ("close", "volume"),
+        parameters={"fast": 5, "slow": 20},
+        description="5-day average dollar volume divided by 20-day average dollar volume.",
+        expected_direction="Higher values indicate recent participation is rising versus the trailing baseline.",
+        economic_intuition="Rising participation can confirm attention and reduce sparsity versus acceleration-style volume signals.",
+        required_inputs=("close", "volume"),
+        known_risks="Can flag crowdedness or event-driven volume spikes rather than persistent edge.",
+        expansion_batch=EXPANSION_BATCH_VERSION,
+    ),
+    ExpandedSignalSpec(
+        "trend_consistency_20_60_persistent",
+        "trend_quality",
+        "trend_consistency_20_60_persistent",
+        60,
+        "higher_is_consistent_intermediate_positive_trend_with_confirmation",
+        ("close",),
+        parameters={"return_window": 5, "consistency_window": 60, "confirmation_window": 3},
+        description="Batch 2 refinement of trend consistency that keeps the 20/60 trend-consistency core and adds a minimal recent same-sign confirmation filter.",
+        expected_direction="Higher values indicate consistent positive intermediate trend with recent trend-sign confirmation.",
+        economic_intuition="Requiring recent trend agreement should reduce one-off trend consistency readings that do not persist out of sample.",
+        required_inputs=("close",),
+        known_risks="May lag turning points and reduce signal amplitude when trend transitions are abrupt.",
+        expansion_batch=EXPANSION_BATCH_V2_VERSION,
+        refinement_source="trend_consistency_20_60",
+        targeted_failure_mode="low persistence; low sign consistency; weak effective IC",
+        expected_improvement="Improve WFV persistence and sign consistency by retaining only recently confirmed trend-consistency readings.",
+    ),
+    ExpandedSignalSpec(
+        "index_relative_reversal_5_vol_adj",
+        "residual_relative_value",
+        "index_relative_reversal_vol_adj",
+        5,
+        "higher_is_more_oversold_vs_universe_after_vol_adjustment",
+        ("close",),
+        parameters={"reversal_window": 5, "vol_window": 20},
+        description="Batch 2 refinement of index-relative reversal that scales 5-day relative underperformance by recent realized volatility.",
+        expected_direction="Higher values indicate volatility-adjusted underperformance versus the equal-weight universe and a possible reversal edge.",
+        economic_intuition="Volatility scaling should reduce noisy high-volatility reversals that can flip direction out of sample.",
+        required_inputs=("close",),
+        known_risks="May dampen genuine high-volatility reversal opportunities and overlap with residual reversal signals.",
+        expansion_batch=EXPANSION_BATCH_V2_VERSION,
+        refinement_source="index_relative_reversal_5",
+        targeted_failure_mode="direction flip; weak effective IC IR; regime instability",
+        expected_improvement="Improve effective IC robustness by normalizing residual reversal magnitude by trailing realized volatility.",
+    ),
+    ExpandedSignalSpec(
+        "index_relative_reversal_5_confirmed",
+        "residual_relative_value",
+        "index_relative_reversal_confirmed",
+        5,
+        "higher_is_recently_stabilized_oversold_vs_universe",
+        ("close",),
+        parameters={"reversal_window": 5, "confirmation_window": 1},
+        description="Batch 2 refinement of index-relative reversal that requires a minimal one-day stabilization confirmation after relative underperformance.",
+        expected_direction="Higher values indicate recent relative underperformance that has stopped worsening on the latest day.",
+        economic_intuition="A small delayed-entry confirmation should reduce catching falling names before reversal pressure stabilizes.",
+        required_inputs=("close",),
+        known_risks="Delayed confirmation may miss fast rebounds and reduce the number of active reversal observations.",
+        expansion_batch=EXPANSION_BATCH_V2_VERSION,
+        refinement_source="index_relative_reversal_5",
+        targeted_failure_mode="direction flip; low sign consistency; weak effective IC",
+        expected_improvement="Improve sign consistency by requiring oversold names to show minimal recent relative stabilization before ranking strongly.",
+    ),
 ]
 
 
@@ -163,6 +329,89 @@ def _raw_signal_panel(spec: ExpandedSignalSpec, ohlcv: dict[str, pd.DataFrame]) 
         positive_rate = returns.gt(0).rolling(lookback, min_periods=max(5, lookback // 2)).mean()
         ret = close.pct_change(lookback, fill_method=None)
         return positive_rate * np.sign(ret)
+    if spec.formula_type == "vol_compression_breakout":
+        fast = int((spec.parameters or {}).get("fast", 20))
+        slow = int((spec.parameters or {}).get("slow", lookback))
+        fast_vol = returns.rolling(fast, min_periods=max(5, fast // 2)).std()
+        slow_vol = returns.rolling(slow, min_periods=max(10, slow // 2)).std()
+        return -(fast_vol / slow_vol.replace(0.0, np.nan) - 1.0)
+    if spec.formula_type == "downside_vol_asymmetry":
+        downside = returns.where(returns < 0).rolling(lookback, min_periods=max(5, lookback // 2)).std()
+        total = returns.rolling(lookback, min_periods=max(5, lookback // 2)).std()
+        return -(downside / total.replace(0.0, np.nan))
+    if spec.formula_type == "index_relative_reversal":
+        stock_ret = close.pct_change(lookback, fill_method=None)
+        universe_ret = stock_ret.mean(axis=1, skipna=True)
+        return -(stock_ret.sub(universe_ret, axis=0))
+    if spec.formula_type == "smooth_trend_persistence":
+        ret = close.pct_change(lookback, fill_method=None)
+        path_length = returns.abs().rolling(lookback, min_periods=max(10, lookback // 2)).sum()
+        return ret / path_length.replace(0.0, np.nan)
+    if spec.formula_type == "trend_consistency_20_60":
+        return_window = int((spec.parameters or {}).get("return_window", 5))
+        consistency_window = int((spec.parameters or {}).get("consistency_window", lookback))
+        rolling_ret = close.pct_change(return_window, fill_method=None)
+        positive_rate = rolling_ret.gt(0).rolling(
+            consistency_window,
+            min_periods=max(10, consistency_window // 2),
+        ).mean()
+        trend_ret = close.pct_change(lookback, fill_method=None)
+        return (positive_rate - 0.5) * np.sign(trend_ret)
+    if spec.formula_type == "trend_consistency_20_60_persistent":
+        return_window = int((spec.parameters or {}).get("return_window", 5))
+        consistency_window = int((spec.parameters or {}).get("consistency_window", lookback))
+        confirmation_window = int((spec.parameters or {}).get("confirmation_window", 3))
+        rolling_ret = close.pct_change(return_window, fill_method=None)
+        positive_rate = rolling_ret.gt(0).rolling(
+            consistency_window,
+            min_periods=max(10, consistency_window // 2),
+        ).mean()
+        trend_ret = close.pct_change(lookback, fill_method=None)
+        startup_trend_ret = close.pct_change(20, fill_method=None)
+        trend_direction = np.sign(trend_ret).where(trend_ret.notna(), np.sign(startup_trend_ret))
+        base = (positive_rate - 0.5) * trend_direction
+        recent_direction = rolling_ret.gt(0).rolling(
+            confirmation_window,
+            min_periods=1,
+        ).mean()
+        confirmed_positive = (trend_ret > 0) & recent_direction.ge(0.5)
+        confirmed_negative = (trend_ret < 0) & recent_direction.le(0.5)
+        confirmation = (confirmed_positive | confirmed_negative).astype(float)
+        return base * (0.5 + 0.5 * confirmation)
+    if spec.formula_type == "index_relative_reversal_vol_adj":
+        reversal_window = int((spec.parameters or {}).get("reversal_window", lookback))
+        vol_window = int((spec.parameters or {}).get("vol_window", 20))
+        stock_ret = close.pct_change(reversal_window, fill_method=None)
+        universe_ret = stock_ret.mean(axis=1, skipna=True)
+        residual_reversal = -(stock_ret.sub(universe_ret, axis=0))
+        realized_vol = returns.rolling(vol_window, min_periods=max(5, vol_window // 2)).std()
+        fallback_vol = returns.abs().rolling(reversal_window, min_periods=1).mean()
+        denominator = realized_vol.fillna(fallback_vol).replace(0.0, np.nan)
+        adjusted = residual_reversal / denominator
+        return adjusted.where(np.isfinite(adjusted), residual_reversal)
+    if spec.formula_type == "index_relative_reversal_confirmed":
+        reversal_window = int((spec.parameters or {}).get("reversal_window", lookback))
+        confirmation_window = int((spec.parameters or {}).get("confirmation_window", 1))
+        stock_ret = close.pct_change(reversal_window, fill_method=None)
+        universe_ret = stock_ret.mean(axis=1, skipna=True)
+        residual_reversal = -(stock_ret.sub(universe_ret, axis=0))
+        recent_stock_ret = close.pct_change(confirmation_window, fill_method=None)
+        recent_universe_ret = recent_stock_ret.mean(axis=1, skipna=True)
+        recent_residual = recent_stock_ret.sub(recent_universe_ret, axis=0)
+        stabilization = recent_residual.ge(0).astype(float)
+        return residual_reversal * (0.5 + 0.5 * stabilization)
+    if spec.formula_type == "percentile_rank_stability":
+        ret = close.pct_change(lookback, fill_method=None)
+        rank = ret.rank(axis=1, pct=True, method="average", na_option="keep")
+        rank_stability_penalty = rank.rolling(lookback, min_periods=max(5, lookback // 2)).std()
+        return rank - rank_stability_penalty
+    if spec.formula_type == "volume_flow_ratio":
+        fast = int((spec.parameters or {}).get("fast", 5))
+        slow = int((spec.parameters or {}).get("slow", lookback))
+        dollar_volume = close * volume
+        fast_flow = dollar_volume.rolling(fast, min_periods=max(2, fast // 2)).mean()
+        slow_flow = dollar_volume.rolling(slow, min_periods=max(5, slow // 2)).mean()
+        return fast_flow / slow_flow.replace(0.0, np.nan) - 1.0
     raise ValueError(f"Unknown expanded discovery formula_type: {spec.formula_type}")
 
 
@@ -189,6 +438,15 @@ def build_expanded_discovery_candidates(
                 "intended_alpha_sleeve": spec.intended_alpha_sleeve,
                 "normalization": "cross_sectional_zscore_by_date_clipped_-3_3",
                 "notes": "Expanded discovery candidate; trailing-only rolling inputs, no future data.",
+                "description": spec.description,
+                "expected_direction": spec.expected_direction or spec.direction_convention,
+                "economic_intuition": spec.economic_intuition,
+                "required_inputs": ",".join(spec.required_inputs or spec.data_dependencies),
+                "known_risks": spec.known_risks,
+                "expansion_batch": spec.expansion_batch,
+                "refinement_source": spec.refinement_source,
+                "targeted_failure_mode": spec.targeted_failure_mode,
+                "expected_improvement": spec.expected_improvement,
                 "run_id": run_id,
                 "created_timestamp": created_timestamp,
             }
@@ -201,7 +459,11 @@ def _daily_rank_ic(signal_panel: pd.DataFrame, forward_return: pd.DataFrame) -> 
     aligned_signal, aligned_return = aligned_signal.align(aligned_return, join="inner", axis=1)
     values = {}
     for date in aligned_signal.index:
-        pair = pd.DataFrame({"signal": aligned_signal.loc[date], "fwd": aligned_return.loc[date]}).replace([np.inf, -np.inf], np.nan).dropna()
+        pair = pd.DataFrame({"signal": aligned_signal.loc[date], "fwd": aligned_return.loc[date]}).apply(
+            pd.to_numeric,
+            errors="coerce",
+        )
+        pair = pair[np.isfinite(pair["signal"]) & np.isfinite(pair["fwd"])].dropna()
         values[date] = pair["signal"].corr(pair["fwd"], method="spearman") if len(pair) >= 5 else np.nan
     return pd.Series(values, name="daily_ic")
 
@@ -398,6 +660,8 @@ def build_expanded_discovery_selection(
 __all__ = [
     "CORE_ALPHA_NAME",
     "DISCOVERY_HORIZONS",
+    "EXPANSION_BATCH_V2_VERSION",
+    "EXPANSION_BATCH_VERSION",
     "EXPANDED_DISCOVERY_SOURCE",
     "EXPANDED_DISCOVERY_VERSION",
     "EXPANDED_SIGNAL_SPECS",
