@@ -10,6 +10,8 @@ import pandas as pd
 EXPANDED_DISCOVERY_VERSION = "phase2_expanded_discovery_v1"
 EXPANSION_BATCH_VERSION = "phase2_expansion_batch_v1"
 EXPANSION_BATCH_V2_VERSION = "phase2_expansion_batch_v2"
+EXPANSION_BATCH_V3_VERSION = "phase2_expansion_batch_v3"
+EXPANSION_BATCH_V4_VERSION = "phase2_expansion_batch_v4"
 EXPANDED_DISCOVERY_SOURCE = "expanded_discovery"
 CORE_ALPHA_NAME = "alpha_regime_blend_dynamic_v4_smooth"
 DISCOVERY_HORIZONS = [1, 5, 10, 20]
@@ -34,6 +36,9 @@ class ExpandedSignalSpec:
     refinement_source: str = ""
     targeted_failure_mode: str = ""
     expected_improvement: str = ""
+    conditional_context: str = ""
+    conditional_source: str = ""
+    expected_conditional_edge: str = ""
 
 
 EXPANDED_SIGNAL_SPECS = [
@@ -213,6 +218,101 @@ EXPANDED_SIGNAL_SPECS = [
         targeted_failure_mode="direction flip; low sign consistency; weak effective IC",
         expected_improvement="Improve sign consistency by requiring oversold names to show minimal recent relative stabilization before ranking strongly.",
     ),
+    ExpandedSignalSpec(
+        "smooth_trend_persistence_60_downtrend",
+        "trend_quality",
+        "smooth_trend_persistence_downtrend",
+        60,
+        "higher_is_smoother_positive_trend_when_benchmark_downtrend",
+        ("close",),
+        description="Batch 3 conditional variant of smooth trend persistence active only when the benchmark trend regime is DOWNTREND.",
+        expected_direction="Higher values indicate smoother positive trend persistence during benchmark downtrends.",
+        economic_intuition="The conditional diagnostics suggested smoother trend persistence was more reliable during stressed benchmark trend states.",
+        required_inputs=("close",),
+        known_risks="Conditional edge is in-sample research evidence and may remain market-cycle dependent.",
+        expansion_batch=EXPANSION_BATCH_V3_VERSION,
+        refinement_source="smooth_trend_persistence_60",
+        conditional_context="benchmark_trend_regime=DOWNTREND",
+        conditional_source="batch3_conditional_signal_diagnostics",
+        targeted_failure_mode="regime dependence; direction flips; weak persistence",
+        expected_conditional_edge="Improve WFV stability by activating only in benchmark downtrend contexts where diagnostics showed stronger sign consistency and persistence.",
+    ),
+    ExpandedSignalSpec(
+        "percentile_rank_stability_20_downtrend",
+        "breadth_cross_sectional_context",
+        "percentile_rank_stability_downtrend",
+        20,
+        "higher_is_stable_relative_strength_leadership_when_benchmark_downtrend",
+        ("close",),
+        description="Batch 3 conditional variant of percentile rank stability active only when the benchmark trend regime is DOWNTREND.",
+        expected_direction="Higher values indicate stable relative-strength leadership during benchmark downtrends.",
+        economic_intuition="Stable leadership may be more informative when the benchmark is weak and cross-sectional sponsorship matters more.",
+        required_inputs=("close",),
+        known_risks="May concentrate evidence in fewer market states and can still fail WFV if the conditional edge is cycle-specific.",
+        expansion_batch=EXPANSION_BATCH_V3_VERSION,
+        refinement_source="percentile_rank_stability_20",
+        conditional_context="benchmark_trend_regime=DOWNTREND",
+        conditional_source="batch3_conditional_signal_diagnostics",
+        targeted_failure_mode="regime dependence; direction flips; low sign consistency",
+        expected_conditional_edge="Improve robustness by activating only in benchmark downtrend contexts where diagnostics showed stronger effective IC.",
+    ),
+    ExpandedSignalSpec(
+        "index_relative_reversal_5_high_drawdown",
+        "residual_relative_value",
+        "index_relative_reversal_high_drawdown",
+        5,
+        "higher_is_more_oversold_vs_universe_when_benchmark_drawdown_high",
+        ("close",),
+        description="Batch 3 conditional variant of index-relative reversal active only when the benchmark drawdown regime is HIGH_DRAWDOWN.",
+        expected_direction="Higher values indicate short-horizon relative underperformance during high benchmark drawdown states.",
+        economic_intuition="Short-horizon relative reversal may be cleaner during market stress when forced selling and overreaction are more common.",
+        required_inputs=("close",),
+        known_risks="May be sensitive to crisis windows and should only proceed through controlled WFV if 03 evidence remains strong.",
+        expansion_batch=EXPANSION_BATCH_V3_VERSION,
+        refinement_source="index_relative_reversal_5",
+        conditional_context="drawdown_regime=HIGH_DRAWDOWN",
+        conditional_source="batch3_conditional_signal_diagnostics",
+        targeted_failure_mode="direction flip; weak effective IC IR; regime instability",
+        expected_conditional_edge="Improve sign consistency by activating only in high drawdown contexts where diagnostics showed stronger reversal behavior.",
+    ),
+    ExpandedSignalSpec(
+        "failed_breakout_reversal_20_low_breadth",
+        "microstructure_lite",
+        "failed_breakout_reversal_low_breadth",
+        20,
+        "higher_is_failed_breakout_reversal_candidate_when_market_breadth_low",
+        ("high", "low", "close"),
+        description="Batch 4 conditional variant of failed breakout reversal active only when the Conditional Edge Atlas breadth-level state is LOW_BREADTH.",
+        expected_direction="Higher values indicate failed breakout reversal setups during low market breadth states.",
+        economic_intuition="Low breadth may make failed breakouts more informative because upside participation is narrow and exhaustion failures are more consequential.",
+        required_inputs=("high", "low", "close"),
+        known_risks="LOW_BREADTH evidence is conditional research evidence and may overlap with other stress/breadth deterioration effects.",
+        expansion_batch=EXPANSION_BATCH_V4_VERSION,
+        refinement_source="failed_breakout_reversal_20",
+        conditional_context="breadth_level_state=LOW_BREADTH",
+        conditional_source="conditional_edge_atlas_v1",
+        targeted_failure_mode="regime dependence; direction flips; weak universal robustness",
+        expected_conditional_edge="Improve robustness by activating only in LOW_BREADTH contexts where the atlas showed recurring microstructure-lite strength across h10/h20.",
+    ),
+    ExpandedSignalSpec(
+        "smooth_trend_persistence_60_low_breadth",
+        "trend_quality",
+        "smooth_trend_persistence_low_breadth",
+        60,
+        "higher_is_smoother_positive_trend_when_market_breadth_low",
+        ("close",),
+        description="Batch 4 conditional variant of smooth trend persistence active only when the Conditional Edge Atlas breadth-level state is LOW_BREADTH.",
+        expected_direction="Higher values indicate smoother positive trend persistence during low market breadth states.",
+        economic_intuition="Smooth persistent trends may matter more when broad participation is weak and durable sponsorship is scarce.",
+        required_inputs=("close",),
+        known_risks="Conditional edge may remain concentrated in narrow market states and should proceed only through controlled WFV if 03 evidence supports it.",
+        expansion_batch=EXPANSION_BATCH_V4_VERSION,
+        refinement_source="smooth_trend_persistence_60",
+        conditional_context="breadth_level_state=LOW_BREADTH",
+        conditional_source="conditional_edge_atlas_v1",
+        targeted_failure_mode="regime dependence; direction flips; weak universal robustness",
+        expected_conditional_edge="Improve robustness by activating only in LOW_BREADTH contexts where the atlas showed trend-quality strength at h20.",
+    ),
 ]
 
 
@@ -234,6 +334,78 @@ def _returns(close: pd.DataFrame) -> pd.DataFrame:
 
 def _market_return(close: pd.DataFrame) -> pd.Series:
     return _returns(close).mean(axis=1, skipna=True)
+
+
+def _benchmark_close(close: pd.DataFrame, benchmark_ticker: str = "SPY") -> pd.Series:
+    if benchmark_ticker in close.columns:
+        return close[benchmark_ticker]
+    return close.mean(axis=1, skipna=True)
+
+
+def _benchmark_downtrend_mask(close: pd.DataFrame) -> pd.Series:
+    benchmark = _benchmark_close(close)
+    ma_50 = benchmark.rolling(50).mean()
+    ma_200 = benchmark.rolling(200).mean()
+    return ((ma_50 < ma_200) & (benchmark < ma_200)).fillna(False)
+
+
+def _benchmark_high_drawdown_mask(close: pd.DataFrame) -> pd.Series:
+    benchmark = _benchmark_close(close)
+    drawdown = benchmark.div(benchmark.cummax()).sub(1.0)
+    return drawdown.le(-0.10).fillna(False)
+
+
+def _low_breadth_mask(close: pd.DataFrame, benchmark_ticker: str = "SPY") -> pd.Series:
+    asset_close = close.drop(columns=[benchmark_ticker], errors="ignore")
+    breadth = asset_close.pct_change(20, fill_method=None).gt(0).mean(axis=1, skipna=True)
+    valid = breadth.dropna()
+    if valid.empty:
+        return pd.Series(False, index=close.index)
+    low_cutoff = valid.quantile(1 / 3)
+    return breadth.le(low_cutoff).fillna(False)
+
+
+def _apply_date_condition(panel: pd.DataFrame, active_dates: pd.Series) -> pd.DataFrame:
+    aligned = active_dates.reindex(panel.index).fillna(False).astype(bool)
+    return panel.where(aligned, np.nan)
+
+
+def _neutralize_inactive_dates(panel: pd.DataFrame, spec: ExpandedSignalSpec, close: pd.DataFrame) -> pd.DataFrame:
+    if spec.conditional_context == "benchmark_trend_regime=DOWNTREND":
+        active_dates = _benchmark_downtrend_mask(close)
+    elif spec.conditional_context == "drawdown_regime=HIGH_DRAWDOWN":
+        active_dates = _benchmark_high_drawdown_mask(close)
+    elif spec.conditional_context == "breadth_level_state=LOW_BREADTH":
+        active_dates = _low_breadth_mask(close)
+    else:
+        return panel
+    output = panel.copy()
+    output.loc[~active_dates.reindex(output.index).fillna(False).astype(bool)] = 0.0
+    return output
+
+
+def _cross_sectional_rank_centered(panel: pd.DataFrame) -> pd.DataFrame:
+    ranked = panel.replace([np.inf, -np.inf], np.nan).rank(axis=1, pct=True)
+    return (ranked - 0.5) * 2.0
+
+
+def _rolling_percentile_rank(panel: pd.DataFrame, window: int = 126, min_periods: int = 40) -> pd.DataFrame:
+    ranked = panel.replace([np.inf, -np.inf], np.nan).rolling(window, min_periods=min_periods).rank(pct=True)
+    return (ranked - 0.5) * 2.0
+
+
+def _ema_smooth(panel: pd.DataFrame, span: int = 5) -> pd.DataFrame:
+    return panel.replace([np.inf, -np.inf], np.nan).ewm(span=span, min_periods=max(2, span // 2)).mean()
+
+
+def _soft_condition(panel: pd.DataFrame, condition: pd.DataFrame, inactive_scale: float = 0.25) -> pd.DataFrame:
+    return panel.where(condition, panel * inactive_scale)
+
+
+def _range_position(close: pd.DataFrame, high: pd.DataFrame, low: pd.DataFrame, window: int) -> pd.DataFrame:
+    trailing_high = high.rolling(window, min_periods=max(2, window // 2)).max()
+    trailing_low = low.rolling(window, min_periods=max(2, window // 2)).min()
+    return (close - trailing_low) / (trailing_high - trailing_low).replace(0.0, np.nan)
 
 
 def _rolling_beta(stock_returns: pd.DataFrame, market_returns: pd.Series, window: int) -> pd.DataFrame:
@@ -343,10 +515,40 @@ def _raw_signal_panel(spec: ExpandedSignalSpec, ohlcv: dict[str, pd.DataFrame]) 
         stock_ret = close.pct_change(lookback, fill_method=None)
         universe_ret = stock_ret.mean(axis=1, skipna=True)
         return -(stock_ret.sub(universe_ret, axis=0))
+    if spec.formula_type == "index_relative_reversal_high_drawdown":
+        stock_ret = close.pct_change(lookback, fill_method=None)
+        universe_ret = stock_ret.mean(axis=1, skipna=True)
+        base = -(stock_ret.sub(universe_ret, axis=0))
+        return _apply_date_condition(base, _benchmark_high_drawdown_mask(close))
     if spec.formula_type == "smooth_trend_persistence":
         ret = close.pct_change(lookback, fill_method=None)
         path_length = returns.abs().rolling(lookback, min_periods=max(10, lookback // 2)).sum()
         return ret / path_length.replace(0.0, np.nan)
+    if spec.formula_type == "smooth_trend_persistence_downtrend":
+        ret = close.pct_change(lookback, fill_method=None)
+        path_length = returns.abs().rolling(lookback, min_periods=max(10, lookback // 2)).sum()
+        base = ret / path_length.replace(0.0, np.nan)
+        return _apply_date_condition(base, _benchmark_downtrend_mask(close))
+    if spec.formula_type == "smooth_trend_persistence_low_breadth":
+        ret = close.pct_change(lookback, fill_method=None)
+        path_length = returns.abs().rolling(lookback, min_periods=max(10, lookback // 2)).sum()
+        base = ret / path_length.replace(0.0, np.nan)
+        return _apply_date_condition(base, _low_breadth_mask(close))
+    if spec.formula_type == "failed_breakout_reversal_low_breadth":
+        realized_vol_20 = returns.rolling(20, min_periods=10).std()
+        prior_20_high = high.shift(1).rolling(20, min_periods=10).max()
+        range_pos_20 = _range_position(close, high, low, 20)
+        trend_strength_20 = close / close.rolling(20, min_periods=10).mean() - 1.0
+        trend_strength_50 = close / close.rolling(50, min_periods=25).mean() - 1.0
+        trend_rank_50 = _cross_sectional_rank_centered(trend_strength_50)
+        trend_down = trend_rank_50 < -0.10
+        high_vol = _cross_sectional_rank_centered(realized_vol_20) > 0.10
+        failed_breakout = high.gt(prior_20_high).astype(float) * (1.0 - range_pos_20)
+        base = _soft_condition(
+            _rolling_percentile_rank(_ema_smooth(failed_breakout * (1.0 + trend_strength_20.abs()), 5), 63, 20),
+            high_vol | trend_down,
+        )
+        return _apply_date_condition(base, _low_breadth_mask(close))
     if spec.formula_type == "trend_consistency_20_60":
         return_window = int((spec.parameters or {}).get("return_window", 5))
         consistency_window = int((spec.parameters or {}).get("consistency_window", lookback))
@@ -405,6 +607,12 @@ def _raw_signal_panel(spec: ExpandedSignalSpec, ohlcv: dict[str, pd.DataFrame]) 
         rank = ret.rank(axis=1, pct=True, method="average", na_option="keep")
         rank_stability_penalty = rank.rolling(lookback, min_periods=max(5, lookback // 2)).std()
         return rank - rank_stability_penalty
+    if spec.formula_type == "percentile_rank_stability_downtrend":
+        ret = close.pct_change(lookback, fill_method=None)
+        rank = ret.rank(axis=1, pct=True, method="average", na_option="keep")
+        rank_stability_penalty = rank.rolling(lookback, min_periods=max(5, lookback // 2)).std()
+        base = rank - rank_stability_penalty
+        return _apply_date_condition(base, _benchmark_downtrend_mask(close))
     if spec.formula_type == "volume_flow_ratio":
         fast = int((spec.parameters or {}).get("fast", 5))
         slow = int((spec.parameters or {}).get("slow", lookback))
@@ -421,7 +629,11 @@ def build_expanded_discovery_candidates(
     created_timestamp: str,
     discovery_version: str = EXPANDED_DISCOVERY_VERSION,
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
-    signals = {spec.signal_name: cross_sectional_zscore(_raw_signal_panel(spec, ohlcv)) for spec in EXPANDED_SIGNAL_SPECS}
+    signals = {}
+    close = ohlcv["close"].copy().apply(pd.to_numeric, errors="coerce")
+    for spec in EXPANDED_SIGNAL_SPECS:
+        normalized = cross_sectional_zscore(_raw_signal_panel(spec, ohlcv))
+        signals[spec.signal_name] = _neutralize_inactive_dates(normalized, spec, close)
     metadata_rows = []
     for spec in EXPANDED_SIGNAL_SPECS:
         metadata_rows.append(
@@ -447,6 +659,9 @@ def build_expanded_discovery_candidates(
                 "refinement_source": spec.refinement_source,
                 "targeted_failure_mode": spec.targeted_failure_mode,
                 "expected_improvement": spec.expected_improvement,
+                "conditional_context": spec.conditional_context,
+                "conditional_source": spec.conditional_source,
+                "expected_conditional_edge": spec.expected_conditional_edge,
                 "run_id": run_id,
                 "created_timestamp": created_timestamp,
             }
@@ -661,6 +876,8 @@ __all__ = [
     "CORE_ALPHA_NAME",
     "DISCOVERY_HORIZONS",
     "EXPANSION_BATCH_V2_VERSION",
+    "EXPANSION_BATCH_V3_VERSION",
+    "EXPANSION_BATCH_V4_VERSION",
     "EXPANSION_BATCH_VERSION",
     "EXPANDED_DISCOVERY_SOURCE",
     "EXPANDED_DISCOVERY_VERSION",

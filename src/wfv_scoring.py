@@ -187,7 +187,15 @@ def run_wfv_for_candidates(
 
     metadata_columns = [
         column
-        for column in ["candidate_tier", "signal_direction", "signal_family", "signal_strength", "source_status"]
+        for column in [
+            "candidate_tier",
+            "signal_direction",
+            "signal_family",
+            "signal_strength",
+            "source_status",
+            "bridge_source",
+            "bridge_reason",
+        ]
         if column in candidates_to_run.columns
     ]
 
@@ -223,6 +231,8 @@ def run_wfv_for_candidates(
         "signal_family",
         "signal_strength",
         "source_status",
+        "bridge_source",
+        "bridge_reason",
         "method",
         "train_start",
         "train_end",

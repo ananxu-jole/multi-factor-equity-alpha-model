@@ -136,6 +136,17 @@ def _main_metadata_from_expanded(metadata: pd.DataFrame, main_columns: list[str]
     return output.reindex(columns=main_columns)
 
 
+def _add_expanded_metadata_columns(
+    main_metadata: pd.DataFrame,
+    expanded_metadata: pd.DataFrame,
+) -> pd.DataFrame:
+    output = main_metadata.copy()
+    for column in expanded_metadata.columns:
+        if column not in output.columns:
+            output[column] = pd.NA
+    return output
+
+
 def _main_quality_from_expanded(quality: pd.DataFrame, main_columns: list[str], discovery_version: str) -> pd.DataFrame:
     output = quality.copy()
     output["signal_version"] = discovery_version
@@ -197,6 +208,7 @@ def promote_selected_expanded_discovery_to_main_universe(
         ].copy()
 
         if integration_names:
+            updated_metadata = _add_expanded_metadata_columns(updated_metadata, metadata)
             metadata_to_add = _main_metadata_from_expanded(
                 metadata.loc[metadata["signal_name"].astype(str).isin(integration_names)].copy(),
                 updated_metadata.columns.tolist(),
@@ -375,6 +387,7 @@ def promote_expansion_batch_to_main_universe(
         ].copy()
 
         if integration_names:
+            updated_metadata = _add_expanded_metadata_columns(updated_metadata, metadata)
             metadata_to_add = _main_metadata_from_expanded(
                 metadata.loc[metadata["signal_name"].astype(str).isin(integration_names)].copy(),
                 updated_metadata.columns.tolist(),
