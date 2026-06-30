@@ -1,0 +1,41 @@
+{
+  "activation_neutralization": "inactive_pre_rank_raw_score_zero",
+  "blocked_candidate_prefixes": [
+    "dpath_",
+    "ecluster_"
+  ],
+  "candidate_count": 5,
+  "candidate_ids": [
+    "vov_01",
+    "vov_02",
+    "vov_03",
+    "vov_04",
+    "vov_05"
+  ],
+  "classification": "PANEL_GENERATION_READY_FOR_AUDIT",
+  "created_at_utc": "2026-06-29T07:32:03+00:00",
+  "discovery_executed": false,
+  "external_data_accessed": false,
+  "family": "volatility_of_volatility",
+  "governance_modified": false,
+  "ic_scoring_executed": false,
+  "implementation_note": "ohlcv_volatility_of_volatility_research_module_implementation_v1",
+  "implementation_review_note": "ohlcv_volatility_of_volatility_research_module_implementation_review_v1",
+  "ml_integration": false,
+  "module_id": "ohlcv_volatility_of_volatility_research_module_v1",
+  "panel_generation_executed": true,
+  "panel_shape": "long_per_candidate",
+  "production_registration": false,
+  "rank_min_count": 50,
+  "redundancy_screening_executed": false,
+  "refinement_executed": false,
+  "research_status": "RESEARCH_ONLY",
+  "row_count": 5129610,
+  "run_id": "ohlcv_volatility_of_volatility_research_module_panel_generation_v1",
+  "source_data_access": "existing_local_ohlcv_only",
+  "source_ohlcv_path": "data/processed/phase2/nb01_data_foundation/raw_ohlcv.parquet",
+  "spec_id": "ohlcv_volatility_of_volatility_research_module_panel_specification_v1",
+  "thresholds_modified": false,
+  "timing_policy": "after_close_t_forward_returns_after_t",
+  "validation_executed": false
+}

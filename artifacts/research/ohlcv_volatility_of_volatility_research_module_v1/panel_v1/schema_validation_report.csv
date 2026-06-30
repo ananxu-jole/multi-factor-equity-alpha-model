@@ -1,0 +1,6 @@
+candidate_id,schema_status,candidate_id_status,source_spec_id_status,module_id_status,long_form_status,duplicate_status,activation_status,timing_status,family_b_c_status,notes
+vov_01,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,panel validation passed
+vov_02,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,panel validation passed
+vov_03,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,panel validation passed
+vov_04,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,panel validation passed
+vov_05,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,PASS,panel validation passed

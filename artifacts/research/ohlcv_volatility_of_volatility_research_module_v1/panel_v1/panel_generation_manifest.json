@@ -1,0 +1,47 @@
+{
+  "activation_neutralization": "inactive_pre_rank_raw_score_zero",
+  "artifact_root": "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1",
+  "blocked_candidate_prefixes": [
+    "dpath_",
+    "ecluster_"
+  ],
+  "candidate_count": 5,
+  "candidate_ids": [
+    "vov_01",
+    "vov_02",
+    "vov_03",
+    "vov_04",
+    "vov_05"
+  ],
+  "candidate_panel_files": [
+    "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/vov_01_signal_panel.parquet",
+    "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/vov_02_signal_panel.parquet",
+    "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/vov_03_signal_panel.parquet",
+    "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/vov_04_signal_panel.parquet",
+    "artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/vov_05_signal_panel.parquet"
+  ],
+  "classification": "PANEL_GENERATION_READY_FOR_AUDIT",
+  "discovery_executed": false,
+  "duplicate_key_count": 0,
+  "governance_modified": false,
+  "ic_scoring_executed": false,
+  "inactive_row_count": 3024666,
+  "invalid_candidate_count": 0,
+  "missing_signal_count": 269485,
+  "ml_integration": false,
+  "module_id": "ohlcv_volatility_of_volatility_research_module_v1",
+  "panel_generation_executed": true,
+  "panel_shape": "long_per_candidate",
+  "production_registration": false,
+  "redundancy_screening_executed": false,
+  "refinement_executed": false,
+  "run_id": "ohlcv_volatility_of_volatility_research_module_panel_generation_v1",
+  "source_ohlcv_path": "data/processed/phase2/nb01_data_foundation/raw_ohlcv.parquet",
+  "spec_id": "ohlcv_volatility_of_volatility_research_module_panel_specification_v1",
+  "stop_condition_reason": null,
+  "stop_condition_triggered": false,
+  "thresholds_modified": false,
+  "timing_policy": "after_close_t_forward_returns_after_t",
+  "validation_executed": false,
+  "warmup_incomplete_count": 269485
+}

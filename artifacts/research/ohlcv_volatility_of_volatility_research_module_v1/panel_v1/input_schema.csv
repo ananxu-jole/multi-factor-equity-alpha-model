@@ -1,0 +1,8 @@
+column,required
+date,True
+ticker,True
+open,True
+high,True
+low,True
+close,True
+volume,True

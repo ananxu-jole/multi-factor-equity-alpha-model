@@ -1,0 +1,6 @@
+candidate_id,source_spec_id,formula_summary,activation_summary
+vov_01,vov_01_instability_calm_after_chop,"rank_cs(rank_cs(lag(vov_5_20,5)) * rank_cs(-vov_slope_5) * rank_cs(lag(range_chop_20,5)) * rank_cs(low_extension_20))","lag(vov_5_20,5) above date median and vov_slope_5 < 0"
+vov_02,vov_02_low_extension_vov_rise,rank_cs(rank_cs(vov_slope_5) * rank_cs(low_extension_20) * (1 - rank_cs(abs(ret_5))) * rank_cs(dollar_volume)),vov_slope_5 > 0 and abs(ret_20) below date median
+vov_03,vov_03_range_chop_exhaustion,"rank_cs(rank_cs(lag(range_chop_20,5)) * rank_cs(-range_chop_slope_5) * rank_cs(-abs(ret_10)) * rank_cs(low_extension_20))","lag(range_chop_20,5) above date median and range_chop_slope_5 < 0"
+vov_04,vov_04_vov_slope_divergence,"rank_cs(abs(rank_cs(delta(vol_20,10)) - rank_cs(vov_slope_10)) * rank_cs(low_extension_20) * rank_cs(-abs(ret_20)))",continuous
+vov_05,vov_05_churn_controlled_vov_stabilization,"rank_cs(rank_cs(-vov_slope_10) * rank_cs(lag(vov_10_40,10)) * rank_cs(low_churn_5) * rank_cs(low_extension_20))","lag(vov_10_40,10) above date median and vov_slope_10 < 0"

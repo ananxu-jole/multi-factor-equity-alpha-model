@@ -1,0 +1,16 @@
+feature,role
+ret_1,shared_diagnostic
+ret_5,shared_diagnostic
+ret_10,shared_diagnostic
+ret_20,shared_diagnostic
+vol_5,shared_diagnostic
+vol_20,shared_diagnostic
+vov_5_20,shared_diagnostic
+vov_10_40,shared_diagnostic
+vov_slope_5,shared_diagnostic
+vov_slope_10,shared_diagnostic
+range_chop_20,shared_diagnostic
+range_chop_slope_5,shared_diagnostic
+low_extension_20,shared_diagnostic
+rank_churn_5,shared_diagnostic
+low_churn_5,shared_diagnostic
