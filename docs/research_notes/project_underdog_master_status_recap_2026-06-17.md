@@ -24,6 +24,8 @@ Date: 2026-06-17
 - Economic Context Enrichment is useful for descriptive diagnostics, but it is not yet safe for alpha validation, sector-relative transforms, or ML conditioning.
 - Expansion v5 should remain a narrow design and implementation path; broad search is premature.
 - Post-recap update: the OHLCV Non-Hostile Transition and Leadership Rotation cycle completed with final family classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; all nine approved candidates were rejected, no refinement is recommended, and the panels/IC artifacts remain archived as research evidence.
+- Post-recap update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 as the first fully completed research module under `PROJECT_STANDARD_APPROVED`. Phase 10 governance classification was `MODULE_GOVERNANCE_APPROVED`; `vov_01` and `vov_03` were `ADVANCE`, `vov_05` was `WATCH`, and `vov_02`/`vov_04` were `PARK`.
+- Post-recap update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle with governance classification `REFINEMENT_GOVERNANCE_APPROVED`. Validation-design is approved only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are `PARK`; no further refinement is authorized.
 
 ### Current research direction
 - Focus on a narrowly scoped follow-up to the strongest v5 concept, especially participation-breadth repair under hostile trend.
@@ -32,6 +34,7 @@ Date: 2026-06-17
 - Complete metadata source lineage and point-in-time sourcing plans before any sector/industry/peer-aware research or normalization.
 - Treat recovery and stress-target experiments as diagnostics, not status-changing evidence.
 - Do not continue the OHLCV non-hostile leadership-rotation family as an active refinement path; a direction-inversion diagnostic is optional only as a future design task.
+- Treat VoV as a completed bounded-refinement research branch: validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; anchor variants are baseline comparators only; watch and parked variants remain archived; no further refinement is authorized.
 
 ## SECTION 2: Candidate Inventory
 
@@ -76,6 +79,26 @@ Date: 2026-06-17
 - Recommended next action: continue monitoring; require a fresh health refresh before any broader use.
 
 ### Conditional Research
+
+#### OHLCV Volatility-of-Volatility Research Module v1
+- Origin cycle: standard research module lifecycle under `PROJECT_STANDARD_APPROVED`.
+- Current status: `MODULE_STATE_SYNCHRONIZED`, followed by completed bounded refinement classified `REFINEMENT_GOVERNANCE_APPROVED`.
+- Candidate outcomes:
+  - `ADVANCE`: `vov_01`, `vov_03`.
+  - `WATCH`: `vov_05`.
+  - `PARK`: `vov_02`, `vov_04`.
+- Bounded refinement outcomes:
+  - `VALIDATION-DESIGN APPROVED`: `vov_03_ref_strict_chop`, `vov_01_ref_smoothed_calm`.
+  - `BASELINE_COMPARATORS`: `vov_01_ref_anchor`, `vov_03_ref_anchor`.
+  - `WATCH`: `vov_01_ref_longer_memory`.
+  - `PARK`: `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, `vov_03_ref_extension_controlled`.
+- Evidence archive:
+  - panels: `artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/`.
+  - IC discovery: `artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/ic_discovery_v1/`.
+  - bounded refinement panels: `artifacts/research/ohlcv_volatility_of_volatility_refinement_v1/panel_v1/`.
+  - bounded refinement IC discovery: `artifacts/research/ohlcv_volatility_of_volatility_refinement_v1/ic_discovery_v1/`.
+- Governance outcome: validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no additional refinement cycle, validation execution, production registration, threshold change, governance threshold mutation, or ML action is authorized.
+- Recommended next action: run validation-design review for the two approved variants, retaining anchors as baseline comparators and preserving watch/park evidence.
 
 #### nonprice_liquidity_repair_without_price_extension
 - Origin batch: `track_b_v5_focused_discovery`
@@ -180,6 +203,16 @@ Date: 2026-06-17
    - completed implementation, panel generation, panel integrity audit, first-pass IC discovery, and negative-result review.
    - final classification: `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`.
    - main lesson: the non-hostile leadership-rotation thesis failed broadly at h10/h20 as implemented; no candidate is recommended for refinement.
+15. OHLCV Volatility-of-Volatility Research Module v1
+   - completed the full standard module lifecycle through Phase 11.
+   - Phase 10 governance classification: `MODULE_GOVERNANCE_APPROVED`.
+   - final candidate outcomes: `vov_01` and `vov_03` `ADVANCE`; `vov_05` `WATCH`; `vov_02` and `vov_04` `PARK`.
+   - main lesson: VoV produced enough candidate-level h10/h20 evidence to justify a bounded refinement cycle, but not validation or broad family proof.
+16. OHLCV Volatility-of-Volatility Bounded Refinement v1
+   - completed one bounded refinement cycle using the approved `vov_01` and `vov_03` families only.
+   - refinement governance classification: `REFINEMENT_GOVERNANCE_APPROVED`.
+   - final refinement outcomes: `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` `VALIDATION-DESIGN APPROVED`; `vov_01_ref_anchor` and `vov_03_ref_anchor` baseline comparators; `vov_01_ref_longer_memory` `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` `PARK`.
+   - main lesson: bounded VoV refinement improved the candidate-level path enough to justify validation-design review for two variants, not validation execution or another refinement cycle.
 
 ## SECTION 4: Economic Context Enrichment
 
@@ -226,6 +259,7 @@ Date: 2026-06-17
 5. Should future v5 discovery be restricted to active repair/stabilization mechanisms only, or is there room for a second distinct conditional avenue such as dispersion compression or volatility state normalization?
 6. When will it be appropriate to introduce ML into the workflow: after fixed candidate inventory stabilization, after point-in-time metadata readiness, or later alongside a dedicated conditional-alpha framework?
 7. If the OHLCV non-hostile transition negative result is revisited, can an inversion diagnostic be made economically interpretable without becoming stealth refinement or another reversal/stress-repair proxy?
+8. Can the two validation-design approved VoV refinement variants, `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, survive validation-design contamination review while remaining distinct from volatility compression, hostile/stress repair, persistence/rank stability, rank-coherence, plain reversal, and volume-shock reversal?
 
 ## SECTION 6: ML Readiness Assessment
 
@@ -284,6 +318,13 @@ Date: 2026-06-17
    - Treat direction inversion as an optional future design-only diagnostic, not as the next active discovery path.
    - Use it to surface candidate behavior clues, not to change governance status.
    - Maintain raw h10/h20 IC as the anchor label.
+
+7. Start the next authorized VoV work with validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`.
+   - Keep `vov_01_ref_anchor` and `vov_03_ref_anchor` as baseline comparators only.
+   - Keep `vov_01_ref_longer_memory` watch-only.
+   - Keep `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` parked.
+   - Preserve original and refinement panel/IC artifacts as research evidence.
+   - Do not run validation execution, additional refinement, production registration, threshold changes, or ML from this state update.
 
 ---
 

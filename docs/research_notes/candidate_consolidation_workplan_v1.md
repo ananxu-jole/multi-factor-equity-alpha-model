@@ -27,6 +27,7 @@ Consolidation is not a discovery campaign. It is a library-truthing cycle that s
 | `conditional_low_overextension_breakout_20` | earlier v4/v5 design paths | `REDESIGN` | Low-overextension breakout with conditional confirmation. | weak evidence; likely price-rank/reversal contamination | poor activation semantics; rebound/reversal risk | volatility compression/stabilization | Archive unless redesign can isolate a nonprice state thesis; do not keep as active candidate. |
 | `gap_followthrough_low_churn_10` | earlier Track B redesigns | `REDESIGN` | Gap follow-through with low churn and event-quality focus. | weak orthogonality; event coverage issues | insufficient state coverage; not distinct enough | volatility compression/stabilization / recovery/stress diagnostics | Archive as a diagnostic reference; do not retain as current candidate. |
 | OHLCV Non-Hostile Transition and Leadership Rotation approved set (`nhlr_01`, `nhlr_02`, `nhlr_03`, `nhlr_04`, `nhlr_05`, `nhlr_07`, `nhlr_08`, `nhlr_09`, `nhlr_10`) | `ohlcv_non_hostile_transition_and_leadership_rotation_ic_discovery_v1` / negative-result review | `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; all nine candidates `REJECT` | Test whether orderly non-hostile leadership rotation, neutral accumulation, and breadth contribution predict forward returns. | best candidate `nhlr_05` h10 mean IC -0.000173; family h10 mean IC -0.011925; family h20 mean IC -0.014564 | broad negative h10/h20 evidence; no watchlist candidate; possible anti-predictive or late-leadership/crowding behavior | non-hostile transition / leadership rotation diagnostic archive | Park family; archive panels and IC artifacts as negative evidence; no refinement; optional future direction-inversion diagnostic design only. |
+| OHLCV Volatility-of-Volatility Research Module v1 and Bounded Refinement v1 (`vov_01_ref_smoothed_calm`, `vov_03_ref_strict_chop`) | Standard module through Phase 11 plus one bounded refinement cycle | `REFINEMENT_STATE_SYNCHRONIZED`; `vov_03_ref_strict_chop`/`vov_01_ref_smoothed_calm` `VALIDATION-DESIGN APPROVED`; anchors retained as baseline comparators; `vov_01_ref_longer_memory` `WATCH`; unsupported variants `PARK` | Test whether volatility-of-volatility structure contains medium-horizon alpha outside plain volatility compression, then boundedly refine only the approved `vov_01` and `vov_03` mechanisms. | `vov_03_ref_strict_chop` strongest h10 refinement path; `vov_01_ref_smoothed_calm` strongest h20-supported refinement path; anchors retained for baseline comparison; `vov_01_ref_longer_memory` watch-only | candidate-level evidence only; validation-design contamination checks still required against volatility compression, hostile/stress repair, persistence/rank stability, rank-coherence, plain reversal, volume-shock reversal, and `vov_05`-like behavior | volatility-of-volatility / volatility structure | Authorize validation-design review only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no further refinement; keep anchors as comparators; archive watch/park variants and all panel/IC evidence. |
 | `volume_shock_reversal_stable_20` | Track A controlled reference candidate | Track A governance baseline | A stabilized volume-shock reversal candidate used as a reference baseline, separate from Track B. | governed candidate metrics not in current Track B inventory | separate governance path; not part of current consolidation | peer-relative/metadata-dependent ideas (reference) | Keep as a governance reference; do not mix into Track B consolidation decisions. |
 | `earlier v2/v3 watchlist names` | `robustness_first_discovery_expansion_v2`, `v3` | `WATCHLIST_RESEARCH` / `ARCHIVED` | Early robustness-first ideas that informed failure diagnostics. | mostly rejected or watchlist-only evidence | latent reversal-like exposures; low forward evidence | recovery/stress diagnostics / reversal manifold reference | Archive as diagnostic evidence only; use for historical failure-mode review. |
 
@@ -61,6 +62,14 @@ Consolidation is not a discovery campaign. It is a library-truthing cycle that s
 - Least weak reference: `nhlr_05`, with h10 mean IC -0.000173, but this is not sufficient for watchlist or refinement.
 - Diagnostic-only references: generated candidate panels and IC artifacts under the OHLCV Non-Hostile Transition and Leadership Rotation research cycle.
 - Overlap testing: defer unless a separate direction-inversion or concept-redesign design is authorized; do not treat the current formulas as refinement seeds.
+
+### volatility-of-volatility / volatility structure
+- Validation-design approved representatives: `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`.
+- Baseline comparators: `vov_01_ref_anchor` and `vov_03_ref_anchor`.
+- Watch-only reference: `vov_01_ref_longer_memory`; original `vov_05` remains archived watch-only and should not be treated as a validation-design target.
+- Parked references: original `vov_02`/`vov_04`, plus bounded refinement variants `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled`.
+- Evidence archive: original panels under `artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/panel_v1/`, original IC discovery artifacts under `artifacts/research/ohlcv_volatility_of_volatility_research_module_v1/ic_discovery_v1/`, refinement panels under `artifacts/research/ohlcv_volatility_of_volatility_refinement_v1/panel_v1/`, and refinement IC artifacts under `artifacts/research/ohlcv_volatility_of_volatility_refinement_v1/ic_discovery_v1/`.
+- Overlap testing: required in validation-design review against volatility compression, hostile/stress repair, persistence/rank stability, rank-coherence, plain reversal, volume-shock reversal, and `vov_05`-like behavior.
 
 ### peer-relative / metadata-dependent ideas
 - No active candidates are currently driven by peer-relative or point-in-time metadata features.
@@ -103,6 +112,9 @@ Consolidation is not a discovery campaign. It is a library-truthing cycle that s
 
 11. Parked-family boundary confirmation
 - Need to ensure the OHLCV Non-Hostile Transition and Leadership Rotation family remains parked as `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; no candidate should enter refinement from the negative IC cycle.
+
+12. VoV bounded-refinement boundary confirmation
+- Need to ensure only `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` enter validation-design review; `vov_01_ref_anchor` and `vov_03_ref_anchor` remain baseline comparators, `vov_01_ref_longer_memory` remains watch-only, and all original/refinement parked variants remain archived.
 
 ## SECTION 5 – Recommended Consolidation Tests
 
@@ -176,5 +188,6 @@ During consolidation, the following must not change:
 8. Confirm the OHLCV Non-Hostile Transition and Leadership Rotation family is parked after broad negative IC evidence, with inversion diagnostic optional only as a future design task.
 9. Produce a consolidated library note that lists only: active research anchors, retained conditional candidates, diagnostic-only references, and archived candidates.
 10. Pause new discovery until the consolidated library is stable, audit reviewed, and the next metadata-enriched research phase has a clearly defined candidate entry criterion.
+11. Record the VoV bounded refinement module as synchronized and queue only validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no additional refinement cycle is authorized.
 
 The goal of this cycle is a clean, auditable candidate library that is ready for the next stage of conditional alpha research without adding new hypotheses or changing existing validation thresholds.

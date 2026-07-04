@@ -15,6 +15,8 @@ Current maturity assessment:
 - Exploratory but not validated family: dispersion.
 - Diagnostic or parked research: structural interaction, recovery-quality targets, economic-context enrichment, non-price liquidity repair, transition-state variants, peer-group diagnostics, OHLCV non-hostile transition/leadership rotation, and several weak volatility/participation interaction branches.
 - Post-review update: the OHLCV Non-Hostile Transition and Leadership Rotation cycle is now classified `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; all nine approved candidates were rejected, no refinement is recommended, and panels/IC artifacts remain archived as research evidence.
+- Post-review update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 and is synchronized as `MODULE_STATE_SYNCHRONIZED`. Phase 10 governance approved `vov_01` and `vov_03` for bounded refinement design, retained `vov_05` as watch-only, and parked `vov_02`/`vov_04`.
+- Post-review update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. Governance approved validation-design review only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are parked.
 
 Diversification assessment:
 
@@ -42,6 +44,7 @@ Major weaknesses:
 | Hostile / Stress Repair | Established | Identify securities that repair participation, liquidity, breadth, or stability inside hostile, weak-breadth, or stress regimes. | `participation_breadth_repair_under_hostile_trend` | Active research inventory; cleanest candidate classified `HEALTHY_ACTIVE_RESEARCH`; related candidates remain `WATCH_MONITOR`. | Core project edge and strongest evidence base. | High state concentration, h20 concentration, repair/stabilization dependence, co-activation concentration. |
 | Participation Repair | Established sub-family | Capture improving participation or breadth while broader conditions remain hostile or fragile. | `participation_breadth_repair_under_hostile_trend` | Conditional inventory research; one healthy active candidate and one watch-monitor liquidity candidate. | Provides the best current raw-return anchor within the stress-repair umbrella. | Not independent from hostile/stress repair; participation/liquidity and breadth repair can co-activate heavily. |
 | Volatility Compression / Stabilization | Conditional | Detect stabilization after stress, volatility compression, or downside-control behavior. | `volatility_compression_after_stress_stabilization` | `WATCH_MONITOR` in conditional inventory monitoring. | Adds a different expression of repair behavior from participation and breadth. | Recent-window weakness, one-window concentration, and dependence on stress/stabilization states. |
+| Volatility-of-Volatility | Conditional / validation-design approved refinements | Test whether volatility-of-volatility structure contains medium-horizon alpha outside plain volatility compression. | `vov_03_ref_strict_chop`; `vov_01_ref_smoothed_calm`; anchors as baseline comparators | Completed standard module lifecycle and one bounded refinement cycle; validation-design review approved for two refinement variants only. | Adds a volatility-structure axis that may diversify beyond classic compression if validation-design contamination checks pass. | Candidate-level evidence only; possible overlap with stress repair, volatility compression, rank stability, rank-coherence, plain reversal, volume-shock reversal, and `vov_05`-like behavior. |
 | Persistence | Conditional | Test whether post-drawdown rank persistence and low rank churn predict forward returns outside direct stress-repair mechanics. | `post_drawdown_persistence_churn_adjusted_20` | `CONDITIONAL VALIDATION CANDIDATE`. | First validated conditional non-core family lineage; low stress-repair correlation supports diversification. | Evidence remains candidate-level; h20 weaker than h10; still post-drawdown adjacent. |
 | Rank-Coherence | Conditional | Test whether rank-turnover resilience and coherent cross-sectional rank behavior contain alpha. | `rank_coherence_churn_avoidance_02_overlap_adjusted` | `CONDITIONAL VALIDATION CANDIDATE`. | Adds a rank-structure lineage distinct from persistence by correlation and construction. | h10 validation weak, h20-led, stress-repair similarity flag, high sibling/anchor redundancy. |
 | Dispersion | Exploratory | Test whether dispersion expansion, transition, or acceleration states contain cross-sectional alpha. | `dispersion_transition_acceleration_20` / `dispersion_transition_acceleration_neutralized_20` | Discovery/refinement only; no validation pass. | Conceptually distinct from repair, persistence, and rank-coherence. | Modest h10 evidence, h20 decay, fragile timing, refinement did not improve conviction. |
@@ -62,6 +65,7 @@ Stress-repair overlap:
 - Participation repair, breadth repair, liquidity repair, volatility compression, shock absorption, and many transition-state candidates are best viewed as expressions of the same broad hostile/stress-repair umbrella.
 - The current inventory's strongest evidence is concentrated in hostile, weak-breadth, panic/liquidity, drawdown, or stabilization states.
 - Volatility compression is useful, but it is not yet independent enough from stress repair to count as a separate established family.
+- Volatility-of-volatility has now produced two validation-design approved refinement variants, `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, but independence from volatility compression and stress repair remains unproven until validation-design contamination review.
 
 Persistence overlap:
 
@@ -132,7 +136,7 @@ Ranked gaps:
 6. Volatility structure beyond compression.
    - Strategic value: medium.
    - Independence: medium-low using current data.
-   - Current status: compression and shock absorption are repair-adjacent.
+   - Current status: compression and shock absorption are repair-adjacent; the completed VoV bounded refinement adds `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` as validation-design approved variants, but not validated family evidence.
    - Why it matters: volatility slope, realized-volatility regime shifts, or volatility-of-volatility may add structure, but current work has not proven this.
 
 7. Alternative targets and recovery quality.
@@ -261,6 +265,11 @@ The next task should not execute peer-relative alpha discovery immediately. The 
    - Objective: revisit dispersion with a tighter design focused on robustness, h10/h20 behavior, and anti-stress-repair controls.
    - Expected output: either a small discovery/refinement design or a decision to keep dispersion diagnostic.
    - Guardrail: no broad parameter expansion and no resurrection of rejected rising-state variants.
+
+2a. Authorized module follow-up: VoV validation-design review.
+   - Objective: design validation-readiness review work for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` only.
+   - Expected output: a validation-design review note using `vov_01_ref_anchor` and `vov_03_ref_anchor` as baseline comparators, with predeclared contamination checks and stop conditions.
+   - Guardrail: `vov_01_ref_longer_memory` remains watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` remain parked; no validation execution, production action, threshold change, additional refinement, or ML.
 
 3. Third frontier: transition-state dynamics outside hostile/stress repair.
    - Objective: design non-hostile transition families such as calm-to-expansion, compression-to-dispersion, or leadership-transition states.

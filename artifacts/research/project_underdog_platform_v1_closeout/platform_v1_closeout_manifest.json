@@ -1,0 +1,53 @@
+{
+  "manifest_id": "project_underdog_platform_v1_closeout_v1",
+  "classification": "PLATFORM_V1_CLOSED_READY_FOR_REGISTRATION_REVIEW",
+  "created_date": "2026-07-03",
+  "created_by_note": "docs/research_notes/project_underdog_platform_v1_closeout_and_vov_registration_preparation_v1.md",
+  "platform_v1_status": "closed_ready_for_registration_review",
+  "registration_preparation_manifest": "artifacts/research/project_underdog_platform_v1_closeout/vov_registration_preparation_manifest.csv",
+  "candidate_count": 2,
+  "prepared_candidates": [
+    {
+      "candidate_id": "vov_03_ref_strict_chop",
+      "parent_candidate_id": "vov_03",
+      "primary_horizon": "h10",
+      "validation_outcome": "VALIDATION_PASS",
+      "anchor_comparator": "vov_03_ref_anchor",
+      "contamination_review_status": "contamination-review-pending",
+      "production_status": "not-production",
+      "registration_recommendation": "REGISTER_RECOMMENDED"
+    },
+    {
+      "candidate_id": "vov_01_ref_smoothed_calm",
+      "parent_candidate_id": "vov_01",
+      "primary_horizon": "h20",
+      "validation_outcome": "VALIDATION_PASS",
+      "anchor_comparator": "vov_01_ref_anchor",
+      "contamination_review_status": "contamination-review-pending",
+      "production_status": "not-production",
+      "registration_recommendation": "REGISTER_RECOMMENDED"
+    }
+  ],
+  "open_issues_before_full_registration": [
+    "contamination artifacts are placeholder-only",
+    "portfolio interaction has not yet been tested",
+    "production engineering is not authorized",
+    "live monitoring is not established",
+    "PIT metadata remains externally blocked"
+  ],
+  "recommended_next_steps": [
+    "candidate registration review",
+    "git milestone commit and tag",
+    "begin Dispersion Path-Dependence as the next research module"
+  ],
+  "guardrails": {
+    "active_research_registry_modified": false,
+    "production_registry_modified": false,
+    "validation_executed": false,
+    "ic_recomputed": false,
+    "panels_regenerated": false,
+    "formulas_modified": false,
+    "thresholds_changed": false,
+    "ml_introduced": false
+  }
+}

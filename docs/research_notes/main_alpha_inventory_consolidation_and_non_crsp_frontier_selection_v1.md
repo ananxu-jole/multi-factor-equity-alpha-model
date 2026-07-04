@@ -45,6 +45,14 @@ Post-cycle status update:
 
 This recommended frontier has now been executed through implementation, panel generation, IC discovery, and negative-result review. The final family classification is `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`. All nine approved candidates were classified `REJECT`, no refinement is recommended, and generated panels/IC artifacts remain archived as research evidence. The original frontier recommendation is therefore superseded for active research execution; direction inversion is optional only as a future design diagnostic.
 
+VoV module status update:
+
+The OHLCV Volatility-of-Volatility Research Module v1 has now completed the full standard research module lifecycle through Phase 11 and is synchronized as `MODULE_STATE_SYNCHRONIZED`. Phase 10 governance classification was `MODULE_GOVERNANCE_APPROVED`. Official outcomes were `ADVANCE` for `vov_01` and `vov_03`, `WATCH` for `vov_05`, and `PARK` for `vov_02` and `vov_04`.
+
+VoV bounded refinement status update:
+
+The OHLCV Volatility-of-Volatility Bounded Refinement v1 has completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. Refinement governance classification is `REFINEMENT_GOVERNANCE_APPROVED`. Validation-design review is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are parked. No further refinement cycle, validation execution, production action, threshold change, or ML is authorized.
+
 ## SECTION 2 - Alpha Family Inventory
 
 | family | research objective | current maturity | strongest candidate(s) | validation status | evidence strength | redundancy risk | future potential | classification |
@@ -52,6 +60,7 @@ This recommended frontier has now been executed through implementation, panel ge
 | Hostile/stress repair | Identify securities that repair participation, liquidity, breadth, volatility, or stability inside hostile or fragile regimes. | Mature core umbrella. | `participation_breadth_repair_under_hostile_trend`; related participation/liquidity and volatility-compression threads. | Active research inventory; strongest family evidence. | Strongest in project, but state-dependent. | High within repair/stabilization expressions. | Still useful as core family and contamination benchmark. | Established |
 | Participation/breadth repair | Capture improving participation or breadth under weak, hostile, or stress regimes. | Mature sub-family inside stress repair. | `participation_breadth_repair_under_hostile_trend`. | Conditional inventory with healthy/watch-monitor distinctions in prior notes. | Strong within its state niche. | High overlap with hostile/stress repair and liquidity repair. | Maintain and monitor; do not overexpand. | Established |
 | Volatility compression/stabilization | Detect stabilization after stress, volatility spikes, or range compression. | Conditional but repair-adjacent. | `volatility_compression_after_stress_stabilization`. | Conditional refinement candidate/watch-monitor style evidence. | Moderate h20 evidence but weak WFV consistency. | Medium-high; often stress-repair expression. | Useful diagnostic and possible sub-family, not independent core yet. | Conditional |
+| Volatility-of-volatility | Test volatility-of-volatility structure as a medium-horizon OHLCV-only alpha mechanism. | Completed module plus one bounded refinement cycle. | `vov_03_ref_strict_chop`, `vov_01_ref_smoothed_calm`; anchors as baseline comparators. | Completed Phase 11 under `PROJECT_STANDARD_APPROVED`; bounded refinement synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. | Candidate-level h10/h20 evidence improved enough for validation-design review of two variants only. | Medium-high until checked against volatility compression, stress repair, persistence, rank-coherence, reversal, volume-shock, and `vov_05`-like references. | Next authorized work is validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no further refinement. | Conditional |
 | Persistence/rank stability | Test whether post-drawdown rank persistence and low rank churn predict forward returns. | Conditional candidate-lineage. | `post_drawdown_persistence_churn_adjusted_20`; `post_drawdown_persistence_core_20`. | `CONDITIONAL VALIDATION CANDIDATE`. | Good h10 validation behavior; h20 weaker. | Medium; sibling/lineage redundancy expected. | Worth preserving and integration-reviewing. | Conditional |
 | Rank-coherence | Test whether coherent rank structure and turnover resilience contain alpha. | Conditional candidate-lineage. | `rank_coherence_churn_avoidance_02_overlap_adjusted`. | `CONDITIONAL VALIDATION CANDIDATE`. | Positive h20 validation evidence; weak h10 WFV and concentration risks. | High sibling redundancy; moderate stress-repair similarity. | Worth preserving but should seek broader non-overlapping rank-family evidence later. | Conditional |
 | Dispersion/cross-sectional instability | Test dispersion transitions, acceleration, normalization, and instability states. | Explored but weak. | `dispersion_transition_acceleration_20`; `dispersion_transition_acceleration_neutralized_20`. | Discovery/refinement only; no validation pass. | Distinct but modest h5/h10 and h20 decay. | Low versus core families but high fragility. | Valuable diagnostic axis; revisit only with tight design. | Exploratory |
@@ -85,6 +94,7 @@ Volatility adaptation:
 
 - Includes volatility compression, shock absorption, range normalization, and volatility structure behavior.
 - Most current evidence is stress-adjacent; non-hostile volatility adaptation remains underexplored.
+- The completed VoV bounded refinement adds two validation-design approved volatility-structure variants, `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, but this remains candidate-level evidence until anti-redundancy and contamination review is completed.
 
 Participation/liquidity:
 
@@ -147,6 +157,7 @@ Underexplored areas:
 - Volatility adaptation outside stress repair.
 - Participation/liquidity shifts outside hostile or drawdown states.
 - Dispersion robustness under cleaner anti-repair constraints.
+- VoV validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, with anchors retained as baseline comparators and all watch/park variants archived.
 
 Consolidation recommendations:
 
@@ -227,6 +238,10 @@ Prioritization conclusion:
 Historical prioritization conclusion:
 
 The best next frontier in this note was an OHLCV-only non-hostile transition and leadership-rotation discovery program. That program has now completed and is parked as `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL` after broad negative IC evidence. It should be removed from the active priority queue; the archived panels and IC artifacts should be preserved as negative research evidence.
+
+Current authorized follow-up:
+
+After the completed VoV bounded refinement governance decision and state synchronization, the next authorized non-CRSP OHLCV follow-up is validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` only. This is not a new broad discovery program, does not authorize another refinement cycle, and does not authorize validation execution, production registration, threshold changes, or ML.
 
 ## SECTION 7 - Recommended Next Discovery Program
 

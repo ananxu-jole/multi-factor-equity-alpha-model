@@ -54,6 +54,16 @@ Date: 2026-06-17
 - The generated panels and IC artifacts remain archived as research evidence.
 - Direction inversion is optional only as a future design task, not an active refinement path.
 
+### Post-audit VoV module update
+- The OHLCV Volatility-of-Volatility Research Module v1 has completed the full standard lifecycle through Phase 11 and is synchronized as `MODULE_STATE_SYNCHRONIZED`.
+- Phase 10 governance classification was `MODULE_GOVERNANCE_APPROVED`.
+- Official candidate outcomes are: `vov_01` and `vov_03` `ADVANCE`; `vov_05` `WATCH`; `vov_02` and `vov_04` `PARK`.
+- The OHLCV Volatility-of-Volatility Bounded Refinement v1 has also completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`.
+- Refinement governance classification is `REFINEMENT_GOVERNANCE_APPROVED`.
+- Official refinement outcomes are: `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` `VALIDATION-DESIGN APPROVED`; `vov_01_ref_anchor` and `vov_03_ref_anchor` baseline comparators; `vov_01_ref_longer_memory` `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` `PARK`.
+- Validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no additional refinement cycle is authorized.
+- The generated original and refinement panels and IC artifacts remain archived as research evidence and should not be overwritten by future work.
+
 ## SECTION 2 – Candidate Inventory Audit
 
 ### participation_liquidity_state_shift_20_60
@@ -101,6 +111,7 @@ Date: 2026-06-17
 - `conditional_low_overextension_breakout_20` — likely reversal contamination and weak state activation.
 - `gap_followthrough_low_churn_10` — event-quality/state coverage concerns and weak orthogonality.
 - OHLCV Non-Hostile Transition and Leadership Rotation approved set (`nhlr_01`, `nhlr_02`, `nhlr_03`, `nhlr_04`, `nhlr_05`, `nhlr_07`, `nhlr_08`, `nhlr_09`, `nhlr_10`) — broad negative h10/h20 IC evidence; best candidate `nhlr_05` h10 mean IC -0.000173; family classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`.
+- OHLCV Volatility-of-Volatility parked set (`vov_02`, `vov_04`) — parked after Phase 10 governance due weak or negative primary-horizon evidence; retain as negative evidence only. `vov_05` is watch-only and should not be treated as a refinement seed. Bounded refinement parked set (`vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, `vov_03_ref_extension_controlled`) should remain archived; `vov_01_ref_longer_memory` is watch-only.
 - Recommendation: archive these as rejected research clues; do not re-open without a clearly new thesis.
 
 ## SECTION 3 – Research Coverage Analysis
@@ -114,6 +125,7 @@ Date: 2026-06-17
 
 ### Moderately explored areas
 - Volatility interactions: present, but largely in the stress/volatility-compression family rather than broader dispersion or range-structure research.
+- Volatility-of-volatility: now completed as a standard OHLCV module and one bounded refinement cycle; validation-design is approved only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, with `vov_01_ref_anchor`/`vov_03_ref_anchor` retained as baseline comparators. Evidence is candidate-level and validation-design eligible, not validation-ready.
 - Recovery/stress: explored mainly through a few specific stress transition concepts, not a diverse set of stress regimes.
 
 ### Under-explored areas
@@ -195,6 +207,7 @@ Date: 2026-06-17
 - Refresh conditional inventory monitoring and verify whether watch-monitor issues persist.
 - Complete metadata source lineage and point-in-time planning work; do not begin sector-relative research.
 - Narrowly refine `participation_breadth_repair_under_hostile_trend` and test its orthogonality to the existing inventory.
+- Add a validation-design review task for VoV refinement variants `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, after preserving the original and refinement evidence archives.
 
 ### 60-day plan
 - Consolidate the inventory around the strongest stable candidates and archive the weaker research-only items.
