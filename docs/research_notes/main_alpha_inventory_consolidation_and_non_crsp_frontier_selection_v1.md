@@ -53,6 +53,10 @@ VoV bounded refinement status update:
 
 The OHLCV Volatility-of-Volatility Bounded Refinement v1 has completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. Refinement governance classification is `REFINEMENT_GOVERNANCE_APPROVED`. Validation-design review is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are parked. No further refinement cycle, validation execution, production action, threshold change, or ML is authorized.
 
+Dispersion Path-Dependence status update:
+
+Dispersion Path-Dependence has completed the Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED`. Module governance outcome is `PARK_MODULE`. Candidate outcomes are `PARKED` for `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization`, and `NOT_ADVANCED_UNSUPPORTED` for `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding`. No second refinement cycle, additional candidates, validation execution, implementation change, production action, threshold change, or ML is authorized.
+
 ## SECTION 2 - Alpha Family Inventory
 
 | family | research objective | current maturity | strongest candidate(s) | validation status | evidence strength | redundancy risk | future potential | classification |
@@ -63,7 +67,7 @@ The OHLCV Volatility-of-Volatility Bounded Refinement v1 has completed one bound
 | Volatility-of-volatility | Test volatility-of-volatility structure as a medium-horizon OHLCV-only alpha mechanism. | Completed module plus one bounded refinement cycle. | `vov_03_ref_strict_chop`, `vov_01_ref_smoothed_calm`; anchors as baseline comparators. | Completed Phase 11 under `PROJECT_STANDARD_APPROVED`; bounded refinement synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. | Candidate-level h10/h20 evidence improved enough for validation-design review of two variants only. | Medium-high until checked against volatility compression, stress repair, persistence, rank-coherence, reversal, volume-shock, and `vov_05`-like references. | Next authorized work is validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no further refinement. | Conditional |
 | Persistence/rank stability | Test whether post-drawdown rank persistence and low rank churn predict forward returns. | Conditional candidate-lineage. | `post_drawdown_persistence_churn_adjusted_20`; `post_drawdown_persistence_core_20`. | `CONDITIONAL VALIDATION CANDIDATE`. | Good h10 validation behavior; h20 weaker. | Medium; sibling/lineage redundancy expected. | Worth preserving and integration-reviewing. | Conditional |
 | Rank-coherence | Test whether coherent rank structure and turnover resilience contain alpha. | Conditional candidate-lineage. | `rank_coherence_churn_avoidance_02_overlap_adjusted`. | `CONDITIONAL VALIDATION CANDIDATE`. | Positive h20 validation evidence; weak h10 WFV and concentration risks. | High sibling redundancy; moderate stress-repair similarity. | Worth preserving but should seek broader non-overlapping rank-family evidence later. | Conditional |
-| Dispersion/cross-sectional instability | Test dispersion transitions, acceleration, normalization, and instability states. | Explored but weak. | `dispersion_transition_acceleration_20`; `dispersion_transition_acceleration_neutralized_20`. | Discovery/refinement only; no validation pass. | Distinct but modest h5/h10 and h20 decay. | Low versus core families but high fragility. | Valuable diagnostic axis; revisit only with tight design. | Exploratory |
+| Dispersion/cross-sectional instability | Test dispersion transitions, acceleration, normalization, path-dependence, and instability states. | Explored and now includes a completed parked Platform v2 module. | Historical clues: `dispersion_transition_acceleration_20`, `dispersion_transition_acceleration_neutralized_20`, `dpath_01`, and `dpath_03`. | Earlier discovery/refinement only; Dispersion Path-Dependence synchronized as `MODULE_GOVERNANCE_PARKED` with outcome `PARK_MODULE`. | Distinct but weak or horizon-inconsistent h5/h10 evidence and h20 decay. | Low versus core families but high fragility; no active continuation authorization. | Preserve as diagnostic/negative evidence; revisit only via a new independent Platform v2 hypothesis. | Parked / Exploratory |
 | Transition-state dynamics | Study alpha around regime transitions outside static stress labels. | Diagnostic/exploratory. | Transition-state detector; prior transition-state batch had no viable standalone alpha. | Prior 10-candidate batch rejected; detector framing recommended. | Weak as standalone alpha so far. | High if framed as stress absorption; lower if non-hostile transitions are isolated. | Good next frontier if redesigned away from repair states. | Exploratory |
 | Volatility adaptation beyond compression | Explore volatility structure, realized-vol shifts, range behavior, and adaptation to changing volatility. | Exploratory. | Volatility shock absorption and volatility compression threads. | Refinement/diagnostic only. | Mixed and often repair-adjacent. | Medium-high with stabilization family. | Useful inside non-hostile transition design if not stress-gated. | Exploratory |
 | Participation/liquidity outside repair | Test participation and liquidity shifts without hostile/stress repair framing. | Underdeveloped. | Non-price liquidity repair clues; relative participation shift concepts. | Not validation-ready. | Weak to modest. | High with participation repair unless constraints change. | Possible future path, but not first choice. | Exploratory |
@@ -105,6 +109,8 @@ Dispersion:
 
 - Includes dispersion transition acceleration, neutralized dispersion acceleration, dispersion stability, and dispersion normalization clues.
 - Structurally independent but empirically weak.
+- Dispersion Path-Dependence added a completed Platform v2 negative result: relapse resilience and elevated stabilization are parked partial clues, while divergence and consensus-without-crowding are unsupported.
+- The parked DPath batch should not be treated as a refinement seed; future revisit requires a new independent scientific hypothesis.
 
 Transition-state:
 
@@ -157,6 +163,7 @@ Underexplored areas:
 - Volatility adaptation outside stress repair.
 - Participation/liquidity shifts outside hostile or drawdown states.
 - Dispersion robustness under cleaner anti-repair constraints.
+- Dispersion Path-Dependence only as archived negative evidence; no second refinement cycle or continuation batch.
 - VoV validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, with anchors retained as baseline comparators and all watch/park variants archived.
 
 Consolidation recommendations:
@@ -243,6 +250,10 @@ Current authorized follow-up:
 
 After the completed VoV bounded refinement governance decision and state synchronization, the next authorized non-CRSP OHLCV follow-up is validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` only. This is not a new broad discovery program, does not authorize another refinement cycle, and does not authorize validation execution, production registration, threshold changes, or ML.
 
+Dispersion Path-Dependence synchronization:
+
+The completed Dispersion Path-Dependence module is parked as `MODULE_GOVERNANCE_PARKED` and should be removed from the active priority queue. Its panels, IC artifacts, documentation, negative evidence, and Platform v2 lessons should be preserved. Any future dispersion path-dependence work must begin as a new independent scientific hypothesis rather than a continuation of the parked batch.
+
 ## SECTION 7 - Recommended Next Discovery Program
 
 Recommended frontier:
@@ -326,7 +337,9 @@ Phase 1: Consolidation and frontier design.
 - Freeze current family inventory and classifications.
 - Keep CRSP/PIT paused at `EXTERNAL_EVIDENCE_INCOMPLETE`.
 - Record the completed OHLCV Non-Hostile Transition and Leadership Rotation family as parked with classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`.
+- Record the completed Dispersion Path-Dependence module as parked with classification `MODULE_GOVERNANCE_PARKED` and outcome `PARK_MODULE`.
 - Preserve generated panels and IC artifacts as archived research evidence.
+- Preserve DPath panels, IC artifacts, lifecycle documentation, negative evidence, and institutional lessons.
 - Treat any direction-inversion work as a future design-only diagnostic.
 
 Phase 2: Discovery program specification.
@@ -371,7 +384,7 @@ Structural interaction and event-quality structure should be retired from active
 
 3. Which deserve further investment?
 
-Persistence and rank-coherence deserve preservation and integration-review attention as conditional lineages. Dispersion deserves a narrow diagnostic role. The current OHLCV non-hostile transition and leadership-rotation family is parked after broad negative IC evidence. Peer-relative/context-aware alpha deserves future investment only after PIT evidence resumes.
+Persistence and rank-coherence deserve preservation and integration-review attention as conditional lineages. Dispersion deserves a narrow diagnostic role, now including the parked Dispersion Path-Dependence negative result. The current OHLCV non-hostile transition and leadership-rotation family is parked after broad negative IC evidence. Peer-relative/context-aware alpha deserves future investment only after PIT evidence resumes.
 
 4. What is the single best non-CRSP research frontier?
 

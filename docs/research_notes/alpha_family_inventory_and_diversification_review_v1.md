@@ -17,6 +17,7 @@ Current maturity assessment:
 - Post-review update: the OHLCV Non-Hostile Transition and Leadership Rotation cycle is now classified `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; all nine approved candidates were rejected, no refinement is recommended, and panels/IC artifacts remain archived as research evidence.
 - Post-review update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 and is synchronized as `MODULE_STATE_SYNCHRONIZED`. Phase 10 governance approved `vov_01` and `vov_03` for bounded refinement design, retained `vov_05` as watch-only, and parked `vov_02`/`vov_04`.
 - Post-review update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. Governance approved validation-design review only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are parked.
+- Post-review update: Dispersion Path-Dependence completed its Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED` with module outcome `PARK_MODULE`. `dpath_01` and `dpath_03` are parked historical evidence; `dpath_02` and `dpath_04` are unsupported. No second refinement cycle, additional candidates, validation, production action, threshold change, or ML is authorized.
 
 Diversification assessment:
 
@@ -47,7 +48,7 @@ Major weaknesses:
 | Volatility-of-Volatility | Conditional / validation-design approved refinements | Test whether volatility-of-volatility structure contains medium-horizon alpha outside plain volatility compression. | `vov_03_ref_strict_chop`; `vov_01_ref_smoothed_calm`; anchors as baseline comparators | Completed standard module lifecycle and one bounded refinement cycle; validation-design review approved for two refinement variants only. | Adds a volatility-structure axis that may diversify beyond classic compression if validation-design contamination checks pass. | Candidate-level evidence only; possible overlap with stress repair, volatility compression, rank stability, rank-coherence, plain reversal, volume-shock reversal, and `vov_05`-like behavior. |
 | Persistence | Conditional | Test whether post-drawdown rank persistence and low rank churn predict forward returns outside direct stress-repair mechanics. | `post_drawdown_persistence_churn_adjusted_20` | `CONDITIONAL VALIDATION CANDIDATE`. | First validated conditional non-core family lineage; low stress-repair correlation supports diversification. | Evidence remains candidate-level; h20 weaker than h10; still post-drawdown adjacent. |
 | Rank-Coherence | Conditional | Test whether rank-turnover resilience and coherent cross-sectional rank behavior contain alpha. | `rank_coherence_churn_avoidance_02_overlap_adjusted` | `CONDITIONAL VALIDATION CANDIDATE`. | Adds a rank-structure lineage distinct from persistence by correlation and construction. | h10 validation weak, h20-led, stress-repair similarity flag, high sibling/anchor redundancy. |
-| Dispersion | Exploratory | Test whether dispersion expansion, transition, or acceleration states contain cross-sectional alpha. | `dispersion_transition_acceleration_20` / `dispersion_transition_acceleration_neutralized_20` | Discovery/refinement only; no validation pass. | Conceptually distinct from repair, persistence, and rank-coherence. | Modest h10 evidence, h20 decay, fragile timing, refinement did not improve conviction. |
+| Dispersion | Exploratory / Parked Evidence | Test whether dispersion expansion, transition, acceleration, or path-dependence states contain cross-sectional alpha. | Historical clues: `dispersion_transition_acceleration_20`, `dispersion_transition_acceleration_neutralized_20`, and parked `dpath_01`/`dpath_03`. | Earlier discovery/refinement only; Dispersion Path-Dependence completed Platform v2 governance as `MODULE_GOVERNANCE_PARKED`. | Conceptually distinct from repair, persistence, and rank-coherence, and valuable as negative evidence. | Modest or horizon-inconsistent h5/h10 evidence, h20 decay, fragile timing, and no active refinement authorization. |
 | Transition-State Dynamics | Exploratory / Diagnostic | Study alpha around regime transitions beyond static state labels. | Transition-state detector and selected conditional clues. | Diagnostic and exploratory; no current validated independent family. | Useful mechanism layer for future families. | Often collapses back into hostile/stress repair or thin state slices. |
 | Structural Interaction | Diagnostic / Rejected | Test whether smoother interaction terms between volatility, participation, liquidity, and stabilization improve alpha. | `volatility_structure_curvature_stabilization_20` as weak clue. | Closed weak research; no refinement or validation candidate. | Methodological evidence about interaction behavior. | Standalone predictive power too weak; most candidates rejected. |
 | Economic Context / Peer-Relative | Diagnostic Infrastructure | Build sector, industry, peer, and size context for future relative alpha research. | No alpha candidate; diagnostic substrate only. | `ECONOMIC_CONTEXT_DIAGNOSTIC_SUBSTRATE_READY_STATIC_ONLY`. | Potentially the largest independent future family source. | Static metadata blocked from validation use; point-in-time metadata required. |
@@ -82,7 +83,8 @@ Rank-coherence overlap:
 Dispersion overlap:
 
 - Dispersion appears conceptually independent and had modest contamination against existing families, but its alpha evidence remains weak.
-- The current dispersion thread is not a disguised persistence or stress-repair family, but it has not yet proven robust enough to carry portfolio diversification.
+- The current dispersion thread is not a disguised persistence or stress-repair family, but it has not proven robust enough to carry portfolio diversification.
+- Dispersion Path-Dependence added a disciplined Platform v2 negative result: relapse resilience and elevated stabilization remain parked partial clues, while divergence and consensus-without-crowding are unsupported.
 
 Which families are truly independent?
 
@@ -112,7 +114,7 @@ Ranked gaps:
 2. Dispersion and cross-sectional instability.
    - Strategic value: high.
    - Independence: high.
-   - Current status: explored but weak.
+   - Current status: explored but weak; Dispersion Path-Dependence is now parked as `MODULE_GOVERNANCE_PARKED`.
    - Why it matters: dispersion behavior is one of the cleanest ways to move away from repair, persistence, and rank-turnover lineages.
 
 3. Transition-state dynamics outside hostile/stress repair.
@@ -262,9 +264,9 @@ The next task should not execute peer-relative alpha discovery immediately. The 
    - Current-status note: the OHLCV-only non-hostile transition/leadership-rotation branch is no longer the active non-CRSP frontier after its negative IC review; it should remain archived unless an inversion diagnostic is explicitly designed.
 
 2. Second frontier: dispersion and cross-sectional instability re-entry.
-   - Objective: revisit dispersion with a tighter design focused on robustness, h10/h20 behavior, and anti-stress-repair controls.
-   - Expected output: either a small discovery/refinement design or a decision to keep dispersion diagnostic.
-   - Guardrail: no broad parameter expansion and no resurrection of rejected rising-state variants.
+   - Objective: keep dispersion as a diagnostic frontier unless a new independent Platform v2 scientific hypothesis is proposed.
+   - Expected output: no continuation of the parked Dispersion Path-Dependence batch; any future work must start with a new scientific review rather than refinement.
+   - Guardrail: no broad parameter expansion, no resurrection of rejected rising-state variants, and no second refinement cycle for Dispersion Path-Dependence.
 
 2a. Authorized module follow-up: VoV validation-design review.
    - Objective: design validation-readiness review work for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` only.
@@ -280,7 +282,7 @@ The next task should not execute peer-relative alpha discovery immediately. The 
 
 1. How many meaningful alpha families currently exist?
 
-Three meaningful alpha-family axes currently exist: one established hostile/stress-repair umbrella and two conditional candidate-lineages, persistence and rank-coherence. Dispersion is a fourth exploratory axis, but it is not yet strong enough to count as a meaningful validated or conditional family.
+Three meaningful alpha-family axes currently exist: one established hostile/stress-repair umbrella and two conditional candidate-lineages, persistence and rank-coherence. Dispersion is a fourth exploratory axis with useful negative evidence, but it is not strong enough to count as a meaningful validated or conditional family.
 
 2. Is Project Underdog still too concentrated?
 

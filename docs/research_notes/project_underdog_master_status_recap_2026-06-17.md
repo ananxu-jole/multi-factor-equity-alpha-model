@@ -26,6 +26,7 @@ Date: 2026-06-17
 - Post-recap update: the OHLCV Non-Hostile Transition and Leadership Rotation cycle completed with final family classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`; all nine approved candidates were rejected, no refinement is recommended, and the panels/IC artifacts remain archived as research evidence.
 - Post-recap update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 as the first fully completed research module under `PROJECT_STANDARD_APPROVED`. Phase 10 governance classification was `MODULE_GOVERNANCE_APPROVED`; `vov_01` and `vov_03` were `ADVANCE`, `vov_05` was `WATCH`, and `vov_02`/`vov_04` were `PARK`.
 - Post-recap update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle with governance classification `REFINEMENT_GOVERNANCE_APPROVED`. Validation-design is approved only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are `PARK`; no further refinement is authorized.
+- Post-recap update: Dispersion Path-Dependence completed the Platform v2 lifecycle with governance classification `MODULE_GOVERNANCE_PARKED` and module outcome `PARK_MODULE`. `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization` are `PARKED`; `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding` are `NOT_ADVANCED_UNSUPPORTED`. No second refinement cycle, additional candidates, validation, production action, threshold change, or ML is authorized.
 
 ### Current research direction
 - Focus on a narrowly scoped follow-up to the strongest v5 concept, especially participation-breadth repair under hostile trend.
@@ -35,6 +36,7 @@ Date: 2026-06-17
 - Treat recovery and stress-target experiments as diagnostics, not status-changing evidence.
 - Do not continue the OHLCV non-hostile leadership-rotation family as an active refinement path; a direction-inversion diagnostic is optional only as a future design task.
 - Treat VoV as a completed bounded-refinement research branch: validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; anchor variants are baseline comparators only; watch and parked variants remain archived; no further refinement is authorized.
+- Treat Dispersion Path-Dependence as a completed and parked Platform v2 module: preserve panels, IC artifacts, lifecycle documents, negative evidence, and institutional lessons; any future revisit requires a new independent scientific hypothesis.
 
 ## SECTION 2: Candidate Inventory
 
@@ -99,6 +101,23 @@ Date: 2026-06-17
   - bounded refinement IC discovery: `artifacts/research/ohlcv_volatility_of_volatility_refinement_v1/ic_discovery_v1/`.
 - Governance outcome: validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; no additional refinement cycle, validation execution, production registration, threshold change, governance threshold mutation, or ML action is authorized.
 - Recommended next action: run validation-design review for the two approved variants, retaining anchors as baseline comparators and preserving watch/park evidence.
+
+#### Dispersion Path-Dependence Research Module v1
+- Origin cycle: Platform v2 scientific review through governance review.
+- Current status: `MODULE_GOVERNANCE_PARKED`; module outcome `PARK_MODULE`.
+- Candidate outcomes:
+  - `PARKED`: `dpath_01_relapse_resilience_after_calm`, `dpath_03_elevated_disagreement_stabilization`.
+  - `NOT_ADVANCED_UNSUPPORTED`: `dpath_02_disagreement_vol_stress_divergence`, `dpath_04_consensus_without_crowding`.
+- Mechanism outcomes:
+  - Relapse Resilience: partially supported and parked.
+  - Disagreement Path Divergence: unsupported.
+  - Elevated Stabilization: partially supported and parked.
+  - Consensus Formation Without Crowding: unsupported.
+- Evidence archive:
+  - panels: `artifacts/research/dispersion_path_dependence_research_module_v1/panel_v1/`.
+  - IC discovery: `artifacts/research/dispersion_path_dependence_research_module_v1/ic_discovery_v1/`.
+- Governance outcome: research module parked; preserve complete artifact lineage, documentation, negative evidence, and Platform v2 institutional lessons. No second refinement cycle, added candidates, implementation change, validation, production registration, threshold change, or ML action is authorized.
+- Recommended next action: archive as completed parked module evidence; revisit only through a new independent Platform v2 scientific hypothesis.
 
 #### nonprice_liquidity_repair_without_price_extension
 - Origin batch: `track_b_v5_focused_discovery`
@@ -213,6 +232,12 @@ Date: 2026-06-17
    - refinement governance classification: `REFINEMENT_GOVERNANCE_APPROVED`.
    - final refinement outcomes: `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` `VALIDATION-DESIGN APPROVED`; `vov_01_ref_anchor` and `vov_03_ref_anchor` baseline comparators; `vov_01_ref_longer_memory` `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` `PARK`.
    - main lesson: bounded VoV refinement improved the candidate-level path enough to justify validation-design review for two variants, not validation execution or another refinement cycle.
+17. Dispersion Path-Dependence Research Module v1
+   - completed Platform v2 scientific review, mechanism review, candidate allocation, formula/panel specification, implementation, panel generation, panel audit, IC discovery, research review, and governance review.
+   - final governance classification: `MODULE_GOVERNANCE_PARKED`.
+   - final module outcome: `PARK_MODULE`.
+   - candidate outcomes: `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization` `PARKED`; `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding` `NOT_ADVANCED_UNSUPPORTED`.
+   - main lesson: hypothesis-first dispersion path-dependence was scientifically coherent, but the OHLCV-only first batch did not produce robust h5/h10 evidence; fixed stopping rules preserved the negative result and prevented post hoc optimization.
 
 ## SECTION 4: Economic Context Enrichment
 
@@ -259,6 +284,7 @@ Date: 2026-06-17
 5. Should future v5 discovery be restricted to active repair/stabilization mechanisms only, or is there room for a second distinct conditional avenue such as dispersion compression or volatility state normalization?
 6. When will it be appropriate to introduce ML into the workflow: after fixed candidate inventory stabilization, after point-in-time metadata readiness, or later alongside a dedicated conditional-alpha framework?
 7. If the OHLCV non-hostile transition negative result is revisited, can an inversion diagnostic be made economically interpretable without becoming stealth refinement or another reversal/stress-repair proxy?
+8. If Dispersion Path-Dependence is ever revisited, what new independent Platform v2 hypothesis would be required to avoid simply reopening the parked module?
 8. Can the two validation-design approved VoV refinement variants, `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, survive validation-design contamination review while remaining distinct from volatility compression, hostile/stress repair, persistence/rank stability, rank-coherence, plain reversal, and volume-shock reversal?
 
 ## SECTION 6: ML Readiness Assessment
