@@ -72,6 +72,14 @@ Date: 2026-06-17
 - No second refinement cycle, additional candidate batch, validation, production registration, threshold change, implementation change, or ML action is authorized.
 - The generated panels, IC artifacts, research notes, governance note, negative evidence, and Platform v2 institutional lessons remain archived as research evidence and should not be overwritten by future work.
 
+### Post-audit Event Clustering module update
+- Event Clustering completed the Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED`.
+- Module governance outcome is `PARK_MODULE`.
+- Candidate outcomes are: `ecluster_01_concentrated_absorption`, `ecluster_02_aligned_pressure_resolution`, `ecluster_03_fragmented_event_absorption`, `ecluster_04_deteriorating_cluster_avoidance`, and `ecluster_05_aging_cluster_memory` all `PARKED_REJECTED`.
+- Mechanism outcomes are: Event Concentration `PARKED_UNSUPPORTED`; Event Alignment And Fragmentation `PARKED_DIAGNOSTIC_ONLY`; Cluster Absorption Versus Deterioration `PARKED_CONTAMINATION_RISK`; Cluster Aging And Market Memory `PARKED_UNSUPPORTED`.
+- No refinement, validation, production registration, threshold change, implementation change, panel regeneration, IC recomputation, or ML action is authorized.
+- The generated panels, IC artifacts, research notes, governance note, negative evidence, checksum lineage, and Platform v2 institutional lessons remain archived as research evidence and should not be overwritten by future work.
+
 ## SECTION 2 – Candidate Inventory Audit
 
 ### participation_liquidity_state_shift_20_60
@@ -121,6 +129,7 @@ Date: 2026-06-17
 - OHLCV Non-Hostile Transition and Leadership Rotation approved set (`nhlr_01`, `nhlr_02`, `nhlr_03`, `nhlr_04`, `nhlr_05`, `nhlr_07`, `nhlr_08`, `nhlr_09`, `nhlr_10`) — broad negative h10/h20 IC evidence; best candidate `nhlr_05` h10 mean IC -0.000173; family classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`.
 - OHLCV Volatility-of-Volatility parked set (`vov_02`, `vov_04`) — parked after Phase 10 governance due weak or negative primary-horizon evidence; retain as negative evidence only. `vov_05` is watch-only and should not be treated as a refinement seed. Bounded refinement parked set (`vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, `vov_03_ref_extension_controlled`) should remain archived; `vov_01_ref_longer_memory` is watch-only.
 - Dispersion Path-Dependence parked set (`dpath_01_relapse_resilience_after_calm`, `dpath_03_elevated_disagreement_stabilization`) and unsupported set (`dpath_02_disagreement_vol_stress_divergence`, `dpath_04_consensus_without_crowding`) — parked after Platform v2 governance due weak, horizon-inconsistent, or negative h5/h10 evidence; retain as negative and partial scientific evidence only.
+- Event Clustering parked set (`ecluster_01_concentrated_absorption`, `ecluster_02_aligned_pressure_resolution`, `ecluster_03_fragmented_event_absorption`, `ecluster_04_deteriorating_cluster_avoidance`, `ecluster_05_aging_cluster_memory`) — all `PARKED_REJECTED` after Platform v2 governance due negative expected-primary h5/h10 evidence and non-rescuing h1 behavior; retain as negative event-topology evidence only.
 - Recommendation: archive these as rejected research clues; do not re-open without a clearly new thesis.
 
 ## SECTION 3 – Research Coverage Analysis
@@ -143,6 +152,7 @@ Date: 2026-06-17
 - Alternative horizons below h20 in a state-aware way: h10/h15 are noted but not strongly represented.
 - Dispersion transition and cross-sectional stability outside the current candidate family.
 - Dispersion Path-Dependence is now a completed parked Platform v2 module; future dispersion work should require a new independent scientific hypothesis rather than reopening the parked batch.
+- Event topology and clustered-event behavior are now represented by a completed parked Platform v2 module; future Event Clustering work should require a new independent scientific hypothesis rather than reopening the parked batch.
 - Non-OLHCV metadata-based signals, once point-in-time data is available.
 - Portfolio-level interaction or construction-layer diagnostics, which are intentionally deferred.
 

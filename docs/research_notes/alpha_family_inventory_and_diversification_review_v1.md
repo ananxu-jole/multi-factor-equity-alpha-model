@@ -18,6 +18,7 @@ Current maturity assessment:
 - Post-review update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 and is synchronized as `MODULE_STATE_SYNCHRONIZED`. Phase 10 governance approved `vov_01` and `vov_03` for bounded refinement design, retained `vov_05` as watch-only, and parked `vov_02`/`vov_04`.
 - Post-review update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle and is synchronized as `REFINEMENT_STATE_SYNCHRONIZED`. Governance approved validation-design review only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is watch-only; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are parked.
 - Post-review update: Dispersion Path-Dependence completed its Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED` with module outcome `PARK_MODULE`. `dpath_01` and `dpath_03` are parked historical evidence; `dpath_02` and `dpath_04` are unsupported. No second refinement cycle, additional candidates, validation, production action, threshold change, or ML is authorized.
+- Post-review update: Event Clustering completed its Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED` with module outcome `PARK_MODULE`. All five `ecluster_*` candidates are `PARKED_REJECTED`; mechanisms are parked as unsupported, diagnostic-only, or contamination-risk evidence. No refinement, validation, production action, threshold change, or ML is authorized.
 
 Diversification assessment:
 
@@ -49,6 +50,7 @@ Major weaknesses:
 | Persistence | Conditional | Test whether post-drawdown rank persistence and low rank churn predict forward returns outside direct stress-repair mechanics. | `post_drawdown_persistence_churn_adjusted_20` | `CONDITIONAL VALIDATION CANDIDATE`. | First validated conditional non-core family lineage; low stress-repair correlation supports diversification. | Evidence remains candidate-level; h20 weaker than h10; still post-drawdown adjacent. |
 | Rank-Coherence | Conditional | Test whether rank-turnover resilience and coherent cross-sectional rank behavior contain alpha. | `rank_coherence_churn_avoidance_02_overlap_adjusted` | `CONDITIONAL VALIDATION CANDIDATE`. | Adds a rank-structure lineage distinct from persistence by correlation and construction. | h10 validation weak, h20-led, stress-repair similarity flag, high sibling/anchor redundancy. |
 | Dispersion | Exploratory / Parked Evidence | Test whether dispersion expansion, transition, acceleration, or path-dependence states contain cross-sectional alpha. | Historical clues: `dispersion_transition_acceleration_20`, `dispersion_transition_acceleration_neutralized_20`, and parked `dpath_01`/`dpath_03`. | Earlier discovery/refinement only; Dispersion Path-Dependence completed Platform v2 governance as `MODULE_GOVERNANCE_PARKED`. | Conceptually distinct from repair, persistence, and rank-coherence, and valuable as negative evidence. | Modest or horizon-inconsistent h5/h10 evidence, h20 decay, fragile timing, and no active refinement authorization. |
+| Event Clustering / Event Topology | Parked Negative Evidence | Test whether clustered event topology changes forward behavior beyond isolated events and existing families. | `ecluster_02_aligned_pressure_resolution` was least negative but rejected. | Completed Platform v2 governance as `MODULE_GOVERNANCE_PARKED`; all five candidates `PARKED_REJECTED`. | Adds a permanent negative evidence record for event-topology hypotheses and contamination controls. | Negative h5/h10 primary evidence, h1-only less-negative behavior, high contamination risk, and no active refinement authorization. |
 | Transition-State Dynamics | Exploratory / Diagnostic | Study alpha around regime transitions beyond static state labels. | Transition-state detector and selected conditional clues. | Diagnostic and exploratory; no current validated independent family. | Useful mechanism layer for future families. | Often collapses back into hostile/stress repair or thin state slices. |
 | Structural Interaction | Diagnostic / Rejected | Test whether smoother interaction terms between volatility, participation, liquidity, and stabilization improve alpha. | `volatility_structure_curvature_stabilization_20` as weak clue. | Closed weak research; no refinement or validation candidate. | Methodological evidence about interaction behavior. | Standalone predictive power too weak; most candidates rejected. |
 | Economic Context / Peer-Relative | Diagnostic Infrastructure | Build sector, industry, peer, and size context for future relative alpha research. | No alpha candidate; diagnostic substrate only. | `ECONOMIC_CONTEXT_DIAGNOSTIC_SUBSTRATE_READY_STATIC_ONLY`. | Potentially the largest independent future family source. | Static metadata blocked from validation use; point-in-time metadata required. |
@@ -85,6 +87,12 @@ Dispersion overlap:
 - Dispersion appears conceptually independent and had modest contamination against existing families, but its alpha evidence remains weak.
 - The current dispersion thread is not a disguised persistence or stress-repair family, but it has not proven robust enough to carry portfolio diversification.
 - Dispersion Path-Dependence added a disciplined Platform v2 negative result: relapse resilience and elevated stabilization remain parked partial clues, while divergence and consensus-without-crowding are unsupported.
+
+Event-topology overlap:
+
+- Event Clustering is now a completed parked Platform v2 module.
+- The family did not show positive h5/h10 event-topology evidence; all five candidates were `PARKED_REJECTED`.
+- Its strongest lesson is institutional rather than alpha-producing: frozen horizons, isolated-event anchors, contamination controls, audited panels, checksum integrity, and preserved negative evidence prevented h1-less-negative behavior from becoming a post-hoc rescue.
 
 Which families are truly independent?
 
@@ -268,6 +276,11 @@ The next task should not execute peer-relative alpha discovery immediately. The 
    - Expected output: no continuation of the parked Dispersion Path-Dependence batch; any future work must start with a new scientific review rather than refinement.
    - Guardrail: no broad parameter expansion, no resurrection of rejected rising-state variants, and no second refinement cycle for Dispersion Path-Dependence.
 
+2b. Archived frontier: Event Clustering / event topology.
+   - Objective: preserve the parked Event Clustering module as negative evidence and contamination context.
+   - Expected output: no continuation of the parked Event Clustering batch; any future event-topology work must start with a new Platform v2 scientific review.
+   - Guardrail: no refinement, no h1 target switching, no validation execution, no production action, no threshold change, and no ML.
+
 2a. Authorized module follow-up: VoV validation-design review.
    - Objective: design validation-readiness review work for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm` only.
    - Expected output: a validation-design review note using `vov_01_ref_anchor` and `vov_03_ref_anchor` as baseline comparators, with predeclared contamination checks and stop conditions.
@@ -282,7 +295,7 @@ The next task should not execute peer-relative alpha discovery immediately. The 
 
 1. How many meaningful alpha families currently exist?
 
-Three meaningful alpha-family axes currently exist: one established hostile/stress-repair umbrella and two conditional candidate-lineages, persistence and rank-coherence. Dispersion is a fourth exploratory axis with useful negative evidence, but it is not strong enough to count as a meaningful validated or conditional family.
+Three meaningful alpha-family axes currently exist: one established hostile/stress-repair umbrella and two conditional candidate-lineages, persistence and rank-coherence. Dispersion is a fourth exploratory axis with useful negative evidence, but it is not strong enough to count as a meaningful validated or conditional family. Event Clustering is now archived as parked negative event-topology evidence and does not count as a meaningful validated or conditional family.
 
 2. Is Project Underdog still too concentrated?
 

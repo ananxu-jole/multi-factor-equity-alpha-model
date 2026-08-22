@@ -57,6 +57,10 @@ Dispersion Path-Dependence status update:
 
 Dispersion Path-Dependence has completed the Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED`. Module governance outcome is `PARK_MODULE`. Candidate outcomes are `PARKED` for `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization`, and `NOT_ADVANCED_UNSUPPORTED` for `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding`. No second refinement cycle, additional candidates, validation execution, implementation change, production action, threshold change, or ML is authorized.
 
+Event Clustering status update:
+
+Event Clustering has completed the Platform v2 lifecycle and is synchronized as `MODULE_GOVERNANCE_PARKED`. Module governance outcome is `PARK_MODULE`. Candidate outcomes are `PARKED_REJECTED` for `ecluster_01_concentrated_absorption`, `ecluster_02_aligned_pressure_resolution`, `ecluster_03_fragmented_event_absorption`, `ecluster_04_deteriorating_cluster_avoidance`, and `ecluster_05_aging_cluster_memory`. Mechanism outcomes are Event Concentration `PARKED_UNSUPPORTED`, Event Alignment And Fragmentation `PARKED_DIAGNOSTIC_ONLY`, Cluster Absorption Versus Deterioration `PARKED_CONTAMINATION_RISK`, and Cluster Aging And Market Memory `PARKED_UNSUPPORTED`. No refinement, validation execution, implementation change, panel regeneration, IC recomputation, production action, threshold change, or ML is authorized.
+
 ## SECTION 2 - Alpha Family Inventory
 
 | family | research objective | current maturity | strongest candidate(s) | validation status | evidence strength | redundancy risk | future potential | classification |
@@ -68,6 +72,7 @@ Dispersion Path-Dependence has completed the Platform v2 lifecycle and is synchr
 | Persistence/rank stability | Test whether post-drawdown rank persistence and low rank churn predict forward returns. | Conditional candidate-lineage. | `post_drawdown_persistence_churn_adjusted_20`; `post_drawdown_persistence_core_20`. | `CONDITIONAL VALIDATION CANDIDATE`. | Good h10 validation behavior; h20 weaker. | Medium; sibling/lineage redundancy expected. | Worth preserving and integration-reviewing. | Conditional |
 | Rank-coherence | Test whether coherent rank structure and turnover resilience contain alpha. | Conditional candidate-lineage. | `rank_coherence_churn_avoidance_02_overlap_adjusted`. | `CONDITIONAL VALIDATION CANDIDATE`. | Positive h20 validation evidence; weak h10 WFV and concentration risks. | High sibling redundancy; moderate stress-repair similarity. | Worth preserving but should seek broader non-overlapping rank-family evidence later. | Conditional |
 | Dispersion/cross-sectional instability | Test dispersion transitions, acceleration, normalization, path-dependence, and instability states. | Explored and now includes a completed parked Platform v2 module. | Historical clues: `dispersion_transition_acceleration_20`, `dispersion_transition_acceleration_neutralized_20`, `dpath_01`, and `dpath_03`. | Earlier discovery/refinement only; Dispersion Path-Dependence synchronized as `MODULE_GOVERNANCE_PARKED` with outcome `PARK_MODULE`. | Distinct but weak or horizon-inconsistent h5/h10 evidence and h20 decay. | Low versus core families but high fragility; no active continuation authorization. | Preserve as diagnostic/negative evidence; revisit only via a new independent Platform v2 hypothesis. | Parked / Exploratory |
+| Event clustering / event topology | Test whether clustered market events and event memory change forward behavior beyond isolated events and existing families. | Completed and parked Platform v2 module. | `ecluster_02_aligned_pressure_resolution` as least negative reference only. | IC discovery and governance complete; all five candidates `PARKED_REJECTED`. | Negative: all expected-primary h5/h10 evidence failed and h1 was only less negative. | Medium-high with volatility, stress, reversal, persistence, volume, dispersion, transition, and isolated-event anchors. | Preserve as diagnostic/negative evidence; revisit only via a new independent Platform v2 hypothesis. | Parked |
 | Transition-state dynamics | Study alpha around regime transitions outside static stress labels. | Diagnostic/exploratory. | Transition-state detector; prior transition-state batch had no viable standalone alpha. | Prior 10-candidate batch rejected; detector framing recommended. | Weak as standalone alpha so far. | High if framed as stress absorption; lower if non-hostile transitions are isolated. | Good next frontier if redesigned away from repair states. | Exploratory |
 | Volatility adaptation beyond compression | Explore volatility structure, realized-vol shifts, range behavior, and adaptation to changing volatility. | Exploratory. | Volatility shock absorption and volatility compression threads. | Refinement/diagnostic only. | Mixed and often repair-adjacent. | Medium-high with stabilization family. | Useful inside non-hostile transition design if not stress-gated. | Exploratory |
 | Participation/liquidity outside repair | Test participation and liquidity shifts without hostile/stress repair framing. | Underdeveloped. | Non-price liquidity repair clues; relative participation shift concepts. | Not validation-ready. | Weak to modest. | High with participation repair unless constraints change. | Possible future path, but not first choice. | Exploratory |
@@ -111,6 +116,12 @@ Dispersion:
 - Structurally independent but empirically weak.
 - Dispersion Path-Dependence added a completed Platform v2 negative result: relapse resilience and elevated stabilization are parked partial clues, while divergence and consensus-without-crowding are unsupported.
 - The parked DPath batch should not be treated as a refinement seed; future revisit requires a new independent scientific hypothesis.
+
+Event clustering:
+
+- Event Clustering added a completed Platform v2 negative result: all five approved event-topology candidates are `PARKED_REJECTED`.
+- The parked Event Clustering batch should not be treated as a refinement seed; future event-topology work requires a new independent scientific hypothesis.
+- The archived result is useful as contamination context for isolated-event anchors, volume/reversal behavior, stress repair, volatility, persistence, dispersion, and non-hostile transition references.
 
 Transition-state:
 
@@ -164,6 +175,7 @@ Underexplored areas:
 - Participation/liquidity shifts outside hostile or drawdown states.
 - Dispersion robustness under cleaner anti-repair constraints.
 - Dispersion Path-Dependence only as archived negative evidence; no second refinement cycle or continuation batch.
+- Event Clustering only as archived negative evidence; no refinement, h1 rescue, validation path, or continuation batch.
 - VoV validation-design review for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`, with anchors retained as baseline comparators and all watch/park variants archived.
 
 Consolidation recommendations:
@@ -338,8 +350,10 @@ Phase 1: Consolidation and frontier design.
 - Keep CRSP/PIT paused at `EXTERNAL_EVIDENCE_INCOMPLETE`.
 - Record the completed OHLCV Non-Hostile Transition and Leadership Rotation family as parked with classification `FAMILY_PARKED_INVERSION_DIAGNOSTIC_OPTIONAL`.
 - Record the completed Dispersion Path-Dependence module as parked with classification `MODULE_GOVERNANCE_PARKED` and outcome `PARK_MODULE`.
+- Record the completed Event Clustering module as parked with classification `MODULE_GOVERNANCE_PARKED` and outcome `PARK_MODULE`.
 - Preserve generated panels and IC artifacts as archived research evidence.
 - Preserve DPath panels, IC artifacts, lifecycle documentation, negative evidence, and institutional lessons.
+- Preserve Event Clustering panels, IC artifacts, lifecycle documentation, checksum lineage, negative evidence, and institutional lessons.
 - Treat any direction-inversion work as a future design-only diagnostic.
 
 Phase 2: Discovery program specification.

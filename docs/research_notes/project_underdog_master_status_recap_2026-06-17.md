@@ -27,6 +27,7 @@ Date: 2026-06-17
 - Post-recap update: the OHLCV Volatility-of-Volatility Research Module v1 completed the full standard lifecycle through Phase 11 as the first fully completed research module under `PROJECT_STANDARD_APPROVED`. Phase 10 governance classification was `MODULE_GOVERNANCE_APPROVED`; `vov_01` and `vov_03` were `ADVANCE`, `vov_05` was `WATCH`, and `vov_02`/`vov_04` were `PARK`.
 - Post-recap update: OHLCV Volatility-of-Volatility Bounded Refinement v1 completed one bounded refinement cycle with governance classification `REFINEMENT_GOVERNANCE_APPROVED`. Validation-design is approved only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; `vov_01_ref_anchor` and `vov_03_ref_anchor` are baseline comparators; `vov_01_ref_longer_memory` is `WATCH`; `vov_01_ref_strict_calm`, `vov_03_ref_longer_chop`, and `vov_03_ref_extension_controlled` are `PARK`; no further refinement is authorized.
 - Post-recap update: Dispersion Path-Dependence completed the Platform v2 lifecycle with governance classification `MODULE_GOVERNANCE_PARKED` and module outcome `PARK_MODULE`. `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization` are `PARKED`; `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding` are `NOT_ADVANCED_UNSUPPORTED`. No second refinement cycle, additional candidates, validation, production action, threshold change, or ML is authorized.
+- Post-recap update: Event Clustering completed the Platform v2 lifecycle with governance classification `MODULE_GOVERNANCE_PARKED` and module outcome `PARK_MODULE`. All five approved candidates are `PARKED_REJECTED`; mechanism outcomes are Event Concentration `PARKED_UNSUPPORTED`, Event Alignment And Fragmentation `PARKED_DIAGNOSTIC_ONLY`, Cluster Absorption Versus Deterioration `PARKED_CONTAMINATION_RISK`, and Cluster Aging And Market Memory `PARKED_UNSUPPORTED`. No refinement, validation, production action, threshold change, or ML is authorized.
 
 ### Current research direction
 - Focus on a narrowly scoped follow-up to the strongest v5 concept, especially participation-breadth repair under hostile trend.
@@ -37,6 +38,7 @@ Date: 2026-06-17
 - Do not continue the OHLCV non-hostile leadership-rotation family as an active refinement path; a direction-inversion diagnostic is optional only as a future design task.
 - Treat VoV as a completed bounded-refinement research branch: validation-design work is authorized only for `vov_03_ref_strict_chop` and `vov_01_ref_smoothed_calm`; anchor variants are baseline comparators only; watch and parked variants remain archived; no further refinement is authorized.
 - Treat Dispersion Path-Dependence as a completed and parked Platform v2 module: preserve panels, IC artifacts, lifecycle documents, negative evidence, and institutional lessons; any future revisit requires a new independent scientific hypothesis.
+- Treat Event Clustering as a completed and parked Platform v2 module: preserve panels, IC artifacts, lifecycle documents, negative evidence, and institutional lessons; any future event-topology revisit requires a new independent Platform v2 scientific hypothesis.
 
 ## SECTION 2: Candidate Inventory
 
@@ -117,6 +119,22 @@ Date: 2026-06-17
   - panels: `artifacts/research/dispersion_path_dependence_research_module_v1/panel_v1/`.
   - IC discovery: `artifacts/research/dispersion_path_dependence_research_module_v1/ic_discovery_v1/`.
 - Governance outcome: research module parked; preserve complete artifact lineage, documentation, negative evidence, and Platform v2 institutional lessons. No second refinement cycle, added candidates, implementation change, validation, production registration, threshold change, or ML action is authorized.
+- Recommended next action: archive as completed parked module evidence; revisit only through a new independent Platform v2 scientific hypothesis.
+
+#### Event Clustering Research Module v1
+- Origin cycle: Platform v2 scientific review through governance review.
+- Current status: `MODULE_GOVERNANCE_PARKED`; module outcome `PARK_MODULE`.
+- Candidate outcomes:
+  - `PARKED_REJECTED`: `ecluster_01_concentrated_absorption`, `ecluster_02_aligned_pressure_resolution`, `ecluster_03_fragmented_event_absorption`, `ecluster_04_deteriorating_cluster_avoidance`, `ecluster_05_aging_cluster_memory`.
+- Mechanism outcomes:
+  - Event Concentration: parked unsupported.
+  - Event Alignment And Fragmentation: parked diagnostic-only.
+  - Cluster Absorption Versus Deterioration: parked contamination risk.
+  - Cluster Aging And Market Memory: parked unsupported.
+- Evidence archive:
+  - panels: `artifacts/research/event_clustering_research_module_v1/panel_v1/`.
+  - IC discovery: `artifacts/research/event_clustering_research_module_v1/ic_discovery_v1/`.
+- Governance outcome: research module parked; preserve complete documentation lineage, panel lineage, IC lineage, negative evidence, checksum-based artifact integrity, and Platform v2 institutional lessons. No refinement, validation, production registration, threshold change, or ML action is authorized.
 - Recommended next action: archive as completed parked module evidence; revisit only through a new independent Platform v2 scientific hypothesis.
 
 #### nonprice_liquidity_repair_without_price_extension
@@ -238,6 +256,12 @@ Date: 2026-06-17
    - final module outcome: `PARK_MODULE`.
    - candidate outcomes: `dpath_01_relapse_resilience_after_calm` and `dpath_03_elevated_disagreement_stabilization` `PARKED`; `dpath_02_disagreement_vol_stress_divergence` and `dpath_04_consensus_without_crowding` `NOT_ADVANCED_UNSUPPORTED`.
    - main lesson: hypothesis-first dispersion path-dependence was scientifically coherent, but the OHLCV-only first batch did not produce robust h5/h10 evidence; fixed stopping rules preserved the negative result and prevented post hoc optimization.
+18. Event Clustering Research Module v1
+   - completed Platform v2 scientific review, research module design, formula/panel specification, implementation, implementation review, panel specification, panel generation, panel audit, IC discovery, research review, and governance review.
+   - final governance classification: `MODULE_GOVERNANCE_PARKED`.
+   - final module outcome: `PARK_MODULE`.
+   - candidate outcomes: all five approved `ecluster_*` candidates `PARKED_REJECTED`.
+   - main lesson: event topology was scientifically plausible but did not produce positive h5/h10 evidence under the frozen OHLCV-only design; h1 was only less negative and was not allowed to rescue the module.
 
 ## SECTION 4: Economic Context Enrichment
 
